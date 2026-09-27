@@ -217,7 +217,7 @@ export default function BookForm() {
         </div>
 
         <FormField label="ملفات PDF">
-          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 text-slate-500 dark:text-slate-400 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition">
+          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 text-slate-500 dark:text-slate-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition">
             <FiUploadCloud size={20} />
             <span className="text-base font-bold">اضغط لاختيار ملف أو أكثر بصيغة PDF</span>
             <input type="file" accept="application/pdf" multiple onChange={handlePdfChange} className="hidden" />
@@ -228,7 +228,7 @@ export default function BookForm() {
               {existingPdfs.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <FiFile className="text-emerald-600 dark:text-emerald-400 shrink-0" size={17} />
+                    <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
                     <div className="min-w-0">
                       <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{p.original_name}</p>
                       <p className="text-sm text-slate-400">{formatSize(p.file_size)}</p>
@@ -249,9 +249,9 @@ export default function BookForm() {
           {newPdfs.length > 0 && (
             <div className="mt-3 flex flex-col gap-2">
               {newPdfs.map((f, idx) => (
-                <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900">
+                <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-900">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <FiFile className="text-emerald-600 dark:text-emerald-400 shrink-0" size={17} />
+                    <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
                     <div className="min-w-0">
                       <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{f.name}</p>
                       <p className="text-sm text-slate-400">{formatSize(f.size)} · جديد</p>
@@ -281,7 +281,7 @@ export default function BookForm() {
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base transition disabled:opacity-60"
+            className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-base transition disabled:opacity-60"
           >
             {saving ? "جارٍ الحفظ..." : "حفظ الكتاب"}
           </button>

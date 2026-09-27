@@ -77,7 +77,7 @@ export default function BooksByArtReport() {
                   </div>
                   <h2 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 min-w-0 break-words">{group.name}</h2>
                 </div>
-                <span className="shrink-0 whitespace-nowrap text-sm font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 px-2.5 py-1 rounded-full">
+                <span className="shrink-0 whitespace-nowrap text-sm font-bold bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2.5 py-1 rounded-full">
                   {group.books.length} كتاب
                 </span>
               </div>
@@ -111,7 +111,7 @@ export default function BooksByArtReport() {
                               target="_blank"
                               rel="noreferrer"
                               title="قراءة"
-                              className="p-1 rounded text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/40 transition"
+                              className="p-1 rounded text-primary-600 hover:bg-primary-100 dark:text-primary-400 dark:hover:bg-primary-900/40 transition"
                             >
                               <FiEye size={14} />
                             </a>

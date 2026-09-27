@@ -133,7 +133,7 @@ export default function EntityListPage({ apiPath, entityLabel, sectionLabel, ico
           <div className="overflow-x-auto">
             <table className="w-full text-base">
               <thead>
-                <tr className="text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700">
+                <tr className="text-primary-800 dark:text-primary-200 bg-primary-50/80 dark:bg-primary-950/50 border-b border-slate-100 dark:border-slate-700">
                   <th className="text-right font-extrabold text-base sm:text-lg py-3 px-3 sm:px-4 whitespace-nowrap">الاسم</th>
                   <th className="text-right font-extrabold text-base sm:text-lg py-3 px-3 sm:px-4 whitespace-nowrap w-px">الإجراءات</th>
                 </tr>
@@ -198,7 +198,7 @@ export default function EntityListPage({ apiPath, entityLabel, sectionLabel, ico
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base transition disabled:opacity-60"
+              className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-base transition disabled:opacity-60"
             >
               {saving ? "جارٍ الحفظ..." : "حفظ"}
             </button>

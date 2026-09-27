@@ -36,7 +36,7 @@ export function ToastProvider({ children }) {
             key={t.id}
             className={`flex items-center gap-2 rounded-lg shadow-lg px-4 py-3 text-base font-bold border animate-[fadeIn_0.2s_ease-out] ${
               t.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-800"
+                ? "bg-primary-50 text-primary-800 border-primary-200 dark:bg-primary-900/40 dark:text-primary-200 dark:border-primary-800"
                 : t.type === "error"
                 ? "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-200 dark:border-red-800"
                 : "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-200 dark:border-sky-800"

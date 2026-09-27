@@ -138,7 +138,7 @@ export default function BookDetails() {
                       href={fileUrl(`/api/books/${id}/pdfs/${pdf.id}/view`)}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-base font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 text-base font-bold hover:bg-primary-100 dark:hover:bg-primary-900/50 transition"
                     >
                       <FiEye size={16} />
                       قراءة

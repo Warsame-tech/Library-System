@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FiUser, FiLock, FiEye, FiEyeOff, FiArrowRight, FiShield, FiAlertCircle } from "react-icons/fi";
+import { FiUser, FiLock, FiEye, FiEyeOff, FiArrowRight, FiShield, FiAlertCircle, FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import userAvatar from "../assets/user-avatar-red.jpg";
+import { useTheme } from "../context/ThemeContext";
+import userAvatar from "../assets/user-avatar-navy.jpg";
 import booksPattern from "../assets/bookshelf-pattern.jpg";
 
 const inputClass =
-  "peer w-full h-12 pl-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition";
+  "peer w-full h-12 pl-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition";
 
 const iconClass =
-  "pointer-events-none absolute top-1/2 -translate-y-1/2 left-4 text-slate-400 peer-focus:text-emerald-600 transition-colors";
+  "pointer-events-none absolute top-1/2 -translate-y-1/2 left-4 text-slate-400 peer-focus:text-primary-600 dark:peer-focus:text-gold-400 transition-colors";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -20,6 +21,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const toast = useToast();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,30 +47,40 @@ export default function Login() {
   return (
     <div
       dir="ltr"
-      className="relative overflow-hidden min-h-dvh flex flex-col items-center justify-center bg-slate-950 px-4 py-10"
+      className="relative overflow-hidden min-h-dvh flex flex-col items-center justify-center bg-[#eef2f9] dark:bg-slate-950 px-4 py-10"
     >
-      {/* خلفية: رفوف الكتب المتحركة تحت طبقة لونية داكنة */}
+      {/* خلفية: رفوف الكتب المتحركة تحت طبقة لونية (فاتحة أو داكنة حسب الوضع) */}
       <div
         aria-hidden="true"
-        className="login-pattern pointer-events-none absolute inset-0 opacity-30"
+        className="login-pattern pointer-events-none absolute inset-0 opacity-25 dark:opacity-30"
         style={{ backgroundImage: `url(${booksPattern})` }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-950/95 via-slate-950/85 to-emerald-900/90"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-50/90 via-white/80 to-gold-50/90 dark:from-primary-950/95 dark:via-primary-900/85 dark:to-slate-950/95"
       />
-      <div aria-hidden="true" className="login-glow pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-emerald-500/25 blur-3xl" />
-      <div aria-hidden="true" className="login-glow pointer-events-none absolute -bottom-40 -right-24 w-[28rem] h-[28rem] rounded-full bg-amber-400/15 blur-3xl [animation-delay:-6s]" />
+      <div aria-hidden="true" className="login-glow pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-primary-300/40 dark:bg-primary-400/30 blur-3xl" />
+      <div aria-hidden="true" className="login-glow pointer-events-none absolute -bottom-40 -right-24 w-[28rem] h-[28rem] rounded-full bg-gold-300/40 dark:bg-gold-400/20 blur-3xl [animation-delay:-6s]" />
+
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        title={theme === "dark" ? "Light mode" : "Dark mode"}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-11 h-11 rounded-full flex items-center justify-center bg-white/80 text-primary-800 ring-1 ring-primary-900/10 shadow-lg shadow-primary-900/10 hover:bg-white hover:scale-105 dark:bg-white/10 dark:text-gold-300 dark:ring-white/15 dark:shadow-black/30 dark:hover:bg-white/20 backdrop-blur-md transition"
+      >
+        {theme === "dark" ? <FiSun size={19} /> : <FiMoon size={19} />}
+      </button>
 
       <div className="login-card relative w-full max-w-[25rem] mt-14">
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="relative bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/40 ring-1 ring-white/20 px-6 sm:px-9 pt-16 pb-8"
+          className="relative bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-primary-900/15 dark:shadow-black/40 ring-1 ring-primary-900/5 dark:ring-white/15 px-6 sm:px-9 pt-16 pb-8"
         >
           {/* الصورة الشخصية فوق البطاقة */}
           <div className="absolute -top-14 left-1/2 -translate-x-1/2">
-            <div className="p-1 rounded-full bg-gradient-to-br from-emerald-400 via-amber-300 to-red-500 shadow-xl shadow-black/30">
+            <div className="p-1 rounded-full bg-gradient-to-br from-gold-300 via-gold-500 to-gold-700 shadow-xl shadow-black/30">
               <img
                 src={userAvatar}
                 alt="Admin"
@@ -81,7 +93,7 @@ export default function Login() {
             <h1 className="text-[1.6rem] leading-tight font-extrabold tracking-tight text-slate-800 dark:text-white">
               Library Management System
             </h1>
-            <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold tracking-wide uppercase">
+            <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-gold-50 ring-1 ring-gold-200 dark:bg-gold-900/30 dark:ring-gold-800 text-gold-700 dark:text-gold-300 text-xs font-bold tracking-wide uppercase">
               <FiShield size={13} />
               Admin Login
             </span>
@@ -145,7 +157,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="group w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-base font-bold shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/40 active:scale-[0.99] transition disabled:opacity-70 disabled:cursor-not-allowed"
+            className="group w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-800 to-primary-600 hover:from-primary-700 hover:to-primary-500 text-white text-base font-bold shadow-lg shadow-primary-800/30 hover:shadow-primary-600/40 active:scale-[0.99] transition disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -161,7 +173,7 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-white/60">
+        <p className="mt-6 text-center text-xs text-primary-800/60 dark:text-gold-200/70">
           © {new Date().getFullYear()} Library Management System
         </p>
       </div>

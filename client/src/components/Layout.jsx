@@ -22,7 +22,7 @@ export default function Layout() {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 dark:bg-slate-900" dir="rtl">
+    <div className="flex min-h-dvh bg-[#f3f5fa] dark:bg-slate-950" dir="rtl">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />

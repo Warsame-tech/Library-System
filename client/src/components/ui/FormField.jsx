@@ -11,7 +11,7 @@ export function FormField({ label, required, error, children }) {
 }
 
 const baseInput =
-  "w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition disabled:opacity-60 disabled:cursor-not-allowed";
+  "w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition disabled:opacity-60 disabled:cursor-not-allowed";
 
 export function TextInput(props) {
   return <input {...props} className={`${baseInput} ${props.className || ""}`} />;

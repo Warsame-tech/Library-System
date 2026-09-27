@@ -1,7 +1,7 @@
 export default function Spinner({ size = 24, className = "" }) {
   return (
     <div
-      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent text-emerald-600 dark:text-emerald-400 ${className}`}
+      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent text-primary-600 dark:text-primary-400 ${className}`}
       style={{ width: size, height: size }}
       role="status"
     />

@@ -137,7 +137,7 @@ export default function BooksList() {
           <div className="hidden xl:block overflow-x-auto">
             <table className="w-full text-base">
               <thead>
-                <tr className="text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700">
+                <tr className="text-primary-800 dark:text-primary-200 bg-primary-50/80 dark:bg-primary-950/50 border-b border-slate-100 dark:border-slate-700">
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">الكتاب</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">المؤلف</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">دار النشر</th>

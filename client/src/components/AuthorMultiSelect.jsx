@@ -28,13 +28,13 @@ export default function AuthorMultiSelect({ authors, value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full min-h-[46px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center flex-wrap gap-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+        className="w-full min-h-[46px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center flex-wrap gap-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
       >
         {selected.length === 0 && <span className="text-slate-400 font-semibold px-1">اختر مؤلفاً واحداً أو أكثر</span>}
         {selected.map((a) => (
           <span
             key={a.id}
-            className="flex items-center gap-1 max-w-full break-all bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 text-sm font-semibold px-2.5 py-1 rounded-full"
+            className="flex items-center gap-1 max-w-full break-all bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 text-sm font-semibold px-2.5 py-1 rounded-full"
           >
             {a.name}
             <span
@@ -67,7 +67,7 @@ export default function AuthorMultiSelect({ authors, value, onChange }) {
                 type="checkbox"
                 checked={value.includes(a.id)}
                 onChange={() => toggle(a.id)}
-                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
               <span className="text-slate-700 dark:text-slate-200 font-bold">{a.name}</span>
             </label>
