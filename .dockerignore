@@ -1,6 +1,8 @@
 **/node_modules
 **/dist
 server/.env
+server/.env.test
+server/tests
 client/.env
 server/uploads/pdfs/*
 .git

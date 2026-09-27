@@ -7,6 +7,7 @@ const { authenticateAllowQuery } = require('../middleware/auth');
 const { uploadBookFiles, PDF_DIR, isValidPdfSignature } = require('../middleware/upload');
 const { bookSchema } = require('../schemas/bookSchema');
 const { logAudit, clientIp } = require('../utils/audit');
+const { savePdfChunks, sendPdf } = require('../utils/pdfStorage');
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ function parseAuthorIds(raw) {
   return [Number(raw)].filter(Boolean);
 }
 
-// حذف ملفات مرفوعة (تُستخدم للتراجع عند فشل التحقق بعد الرفع)
+// حذف ملفات الرفع المؤقتة (بعد نقلها إلى قاعدة البيانات، أو عند فشل التحقق)
 function deleteFiles(files) {
   files.forEach((f) => fs.unlink(f.path, () => {}));
 }
@@ -187,10 +188,11 @@ router.post('/', authenticate, (req, res) => {
       }
 
       for (const pdf of pdfFiles) {
-        await conn.query(
+        const [pdfResult] = await conn.query(
           `INSERT INTO book_pdfs (book_id, file_name, original_name, file_size) VALUES (?, ?, ?, ?)`,
           [bookId, pdf.filename, pdf.originalname, pdf.size]
         );
+        await savePdfChunks(conn, pdfResult.insertId, pdf.path);
       }
 
       await conn.commit();
@@ -208,6 +210,7 @@ router.post('/', authenticate, (req, res) => {
       res.status(500).json({ message: 'حدث خطأ أثناء إضافة الكتاب' });
     } finally {
       conn.release();
+      deleteFiles(pdfFiles);
     }
   });
 });
@@ -259,10 +262,11 @@ router.put('/:id', authenticate, (req, res) => {
 
       // إضافة أي ملفات PDF جديدة (الملفات القديمة تبقى كما هي)
       for (const pdf of pdfFiles) {
-        await conn.query(
+        const [pdfResult] = await conn.query(
           `INSERT INTO book_pdfs (book_id, file_name, original_name, file_size) VALUES (?, ?, ?, ?)`,
           [bookId, pdf.filename, pdf.originalname, pdf.size]
         );
+        await savePdfChunks(conn, pdfResult.insertId, pdf.path);
       }
 
       await conn.commit();
@@ -280,6 +284,7 @@ router.put('/:id', authenticate, (req, res) => {
       res.status(500).json({ message: 'حدث خطأ أثناء تحديث الكتاب' });
     } finally {
       conn.release();
+      deleteFiles(pdfFiles);
     }
   });
 });
@@ -338,15 +343,10 @@ router.get('/:id/pdfs/:pdfId/view', authenticateAllowQuery, async (req, res) => 
     const pdf = rows[0];
     if (!pdf) return res.status(404).json({ message: 'الملف غير موجود' });
 
-    const filePath = path.join(PDF_DIR, pdf.file_name);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'الملف غير موجود على الخادم' });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(pdf.original_name)}"`);
-    fs.createReadStream(filePath).pipe(res);
+    await sendPdf(req, res, pdf, 'inline');
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'حدث خطأ أثناء فتح الملف' });
+    if (!res.headersSent) res.status(500).json({ message: 'حدث خطأ أثناء فتح الملف' });
   }
 });
 
@@ -360,13 +360,10 @@ router.get('/:id/pdfs/:pdfId/download', authenticateAllowQuery, async (req, res)
     const pdf = rows[0];
     if (!pdf) return res.status(404).json({ message: 'الملف غير موجود' });
 
-    const filePath = path.join(PDF_DIR, pdf.file_name);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'الملف غير موجود على الخادم' });
-
-    res.download(filePath, pdf.original_name);
+    await sendPdf(req, res, pdf, 'attachment');
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'حدث خطأ أثناء تحميل الملف' });
+    if (!res.headersSent) res.status(500).json({ message: 'حدث خطأ أثناء تحميل الملف' });
   }
 });
 

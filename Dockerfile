@@ -4,6 +4,10 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm ci
 COPY client/ ./
+# Auto-logout time (seconds). Set VITE_IDLE_TIMEOUT_SECONDS as a Railway service variable
+# to override; Railway passes service variables to the build as build args.
+ARG VITE_IDLE_TIMEOUT_SECONDS=300
+ENV VITE_IDLE_TIMEOUT_SECONDS=$VITE_IDLE_TIMEOUT_SECONDS
 RUN npm run build
 
 FROM node:20-alpine

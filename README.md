@@ -26,7 +26,8 @@ Library Management System/
 │   ├── db/schema.sql        Database schema (tables, FKs, indexes, audit_logs)
 │   ├── db/seed.js           Creates the default admin user
 │   ├── tests/                Jest + Supertest suite (isolated test DB)
-│   └── uploads/              pdfs/ (gitignored, created at runtime)
+│   ├── utils/pdfStorage.js  PDF storage in the database (chunked)
+│   └── uploads/              legacy pdfs/ folder (pre-database uploads only)
 └── client/         React app (Arabic UI, RTL, dark/light mode)
     └── src/
         ├── pages/            Login, Dashboard, entity pages, books, reports
@@ -71,17 +72,60 @@ npm run dev
 
 Open http://localhost:5173 in your browser.
 
-## Cloud deployment (Hugging Face Spaces)
+## PDF storage
 
-The repository includes a `Dockerfile` for deploying the frontend and API as one Docker Space.
+PDF files are stored **inside the MySQL database** (table `book_pdf_chunks`, 256KB pieces per row), not on disk. One database backup therefore contains all data *and* all PDFs, and moving the database to another computer or host moves the PDFs with it. The small piece size keeps every row within default MySQL/MariaDB limits (`max_allowed_packet`, InnoDB redo log), so no server tuning is needed on XAMPP, Railway or anywhere else.
 
-1. Create a new Hugging Face Space and choose **Docker** as the SDK.
-2. Upload or push this repository to the Space.
-3. Create a managed MySQL database (for example, Aiven, Railway, or TiDB Cloud), then import `server/db/schema.sql` into it.
-4. Add these Space secrets/variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `DEFAULT_ADMIN_USERNAME`, and `DEFAULT_ADMIN_PASSWORD`.
-5. Set `NODE_ENV=production` and `FRONTEND_URL` to the public Space URL, then run the seed command once from a trusted environment with the same database variables: `npm run seed` from `server`.
+PDFs uploaded before this change lived in `server/uploads/pdfs/`. Move them into the database once with:
 
-The Space listens on port `7860`. The frontend uses the same-origin `/api` path in production, so no frontend URL secret is needed. Database records are persistent in the managed MySQL service. PDF files currently use the container filesystem; use a persistent Space storage volume or move PDF storage to object storage before relying on cloud redeployments.
+```powershell
+cd server
+node db/importPdfFiles.js                          # preview
+node db/importPdfFiles.js --apply                  # import from uploads/pdfs
+node db/importPdfFiles.js "D:\old\pdfs" --apply    # import from a folder copied from another computer
+```
+
+Files that were never imported are still served from `uploads/pdfs/` as a fallback.
+
+## Hosting on Railway
+
+The repository deploys to Railway as one service (API + built frontend, via the `Dockerfile` and `railway.json`) plus a Railway MySQL database.
+
+1. **New Project → Deploy from GitHub repo** → select this repository.
+2. In the same project: **+ New → Database → MySQL**.
+3. App service → **Variables**:
+   ```
+   DB_HOST=${{MySQL.MYSQLHOST}}
+   DB_PORT=${{MySQL.MYSQLPORT}}
+   DB_USER=${{MySQL.MYSQLUSER}}
+   DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+   DB_NAME=${{MySQL.MYSQLDATABASE}}
+   NODE_ENV=production
+   JWT_SECRET=<long random string>
+   DEFAULT_ADMIN_USERNAME=<admin username>
+   DEFAULT_ADMIN_PASSWORD=<strong password>
+   VITE_IDLE_TIMEOUT_SECONDS=300
+   ```
+4. App service → **Settings → Networking → Generate Domain**, then add `FRONTEND_URL=https://<your-domain>`.
+5. On first start the server creates all tables and the admin account automatically. `/api/health` is used as the deploy health check.
+
+To copy existing local data to Railway, take a backup locally (below) and restore it into Railway's database using the **public** connection details shown in the MySQL service's Variables tab (`MYSQL_PUBLIC_URL`, or its host/port/password parts).
+
+## Backup, restore and moving hosts
+
+Back up (from XAMPP or from Railway — use Railway's *public* host/port/password):
+
+```powershell
+C:\xampp\mysql\bin\mysqldump.exe -h <host> -P <port> -u root -p<password> --default-character-set=utf8mb4 --hex-blob --single-transaction <database> > library_backup.sql
+```
+
+Restore into any MySQL/MariaDB server (new host, Railway, or XAMPP):
+
+```bash
+mysql -h <host> -P <port> -u <user> -p<password> --default-character-set=utf8mb4 <database> < library_backup.sql
+```
+
+`--hex-blob` keeps the PDF bytes intact in the backup file. Run the restore from Git Bash or `cmd` (PowerShell's `<` redirection is not supported and its pipes can corrupt binary data). The backup includes the tables' definitions, so restoring replaces them completely.
 
 ## Default admin login
 
@@ -159,4 +203,4 @@ Covers: login validation/lockout/success, protected-route rejection (missing/inv
 - Book IDs are never shown in the UI — books are referenced by title only.
 - Book fields: title, authors (many-to-many), publisher, art/category, volume count (عدد المجلدات), shelf number (الرف رقم), and PDF files.
 - Editing a book does **not** delete its existing PDF files automatically; PDFs are removed individually via their own delete button.
-- All uploaded PDF files are validated by type and size on the backend, stored under randomized safe filenames, and served only to authenticated requests.
+- All uploaded PDF files are validated by type and size on the backend, stored in the database, and served only to authenticated requests.

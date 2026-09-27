@@ -3,8 +3,15 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 
+const os = require('os');
+
+// المجلد القديم لملفات PDF — يُستخدم فقط لقراءة الملفات التي لم تُنقل بعد إلى قاعدة البيانات
 const PDF_DIR = path.join(__dirname, '..', 'uploads', 'pdfs');
 if (!fs.existsSync(PDF_DIR)) fs.mkdirSync(PDF_DIR, { recursive: true });
+
+// الملفات المرفوعة تُحفظ مؤقتاً هنا ثم تُنقل إلى قاعدة البيانات وتُحذف فوراً
+const TMP_DIR = path.join(os.tmpdir(), 'library-uploads');
+if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
 // اسم ملف عشوائي آمن بامتداد .pdf ثابت — يتجاهل امتداد/اسم الملف الأصلي بالكامل
 // لمنع أي محاولة path traversal أو انتحال امتداد آخر
@@ -14,7 +21,7 @@ function safeFileName() {
 }
 
 const pdfStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, PDF_DIR),
+  destination: (req, file, cb) => cb(null, TMP_DIR),
   filename: (req, file, cb) => cb(null, safeFileName()),
 });
 

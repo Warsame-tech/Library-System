@@ -93,3 +93,14 @@ CREATE TABLE IF NOT EXISTS book_pdfs (
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_pdf_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===================== محتوى ملفات PDF داخل قاعدة البيانات =====================
+-- كل ملف مقسّم إلى أجزاء صغيرة (256KB) حتى يعمل على الإعدادات الافتراضية لأي خادم MySQL
+-- (max_allowed_packet و حجم سجل InnoDB)، وحتى تكفي نسخة احتياطية واحدة لنقل كل البيانات
+CREATE TABLE IF NOT EXISTS book_pdf_chunks (
+  pdf_id INT NOT NULL,
+  seq INT NOT NULL,
+  data MEDIUMBLOB NOT NULL,
+  PRIMARY KEY (pdf_id, seq),
+  CONSTRAINT fk_chunk_pdf FOREIGN KEY (pdf_id) REFERENCES book_pdfs(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
