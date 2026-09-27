@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tajawal (Google Fonts, loaded in index.html) covers both Arabic and Latin text;
+   Segoe UI / Tahoma are offline fallbacks that also support Arabic */
+@theme {
+  --font-sans: "Tajawal", "Segoe UI", Tahoma, system-ui, sans-serif;
+}
+
+/* حجم خط مرن: 14px على الهاتف ويكبر تدريجياً حتى 16px على الشاشات الكبيرة،
+   وبما أن كل مقاسات Tailwind مبنية على rem فإن الواجهة كلها تتناسب مع الشاشة */
+html {
+  scroll-behavior: smooth;
+  font-size: clamp(14px, 12.5px + 0.2vw, 16px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* خلفية صفحة الدخول: صورة رفوف الكتب تملأ الشاشة وتتحرك وتتكبّر ببطء ذهاباً وإياباً
+   (الصورة ليست قابلة للتكرار بلا فواصل، لذلك نحرّكها بدلاً من تكرارها) */
+@keyframes pattern-float {
+  from { transform: scale(1.08) translate(0, 0); }
+  to { transform: scale(1.2) translate(-3%, -2%); }
+}
+.login-pattern {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  animation: pattern-float 25s ease-in-out infinite alternate;
+  will-change: transform;
+}
+/* هالات ضوئية تنبض ببطء، وظهور البطاقة بحركة ناعمة للأعلى */
+@keyframes login-glow {
+  from { transform: translate(0, 0) scale(1); opacity: 0.7; }
+  to { transform: translate(40px, 30px) scale(1.15); opacity: 1; }
+}
+.login-glow {
+  animation: login-glow 12s ease-in-out infinite alternate;
+}
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.login-card {
+  animation: login-card-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-pattern, .login-glow, .login-card { animation: none; }
+}
+
+/* clip (وليس hidden) كي لا يتعطّل position: sticky في الشريط العلوي والجانبي */
+body {
+  overflow-x: clip;
+}
+
+body {
+  font-family: "Tajawal", "Segoe UI", Tahoma, system-ui, sans-serif;
+  font-weight: 500;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgb(148 163 184 / 0.6);
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgb(71 85 105 / 0.8);
+}
