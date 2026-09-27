@@ -109,23 +109,30 @@ The repository deploys to Railway as one service (API + built frontend, via the 
 4. App service → **Settings → Networking → Generate Domain**, then add `FRONTEND_URL=https://<your-domain>`.
 5. On first start the server creates all tables and the admin account automatically. `/api/health` is used as the deploy health check.
 
-To copy existing local data to Railway, take a backup locally (below) and restore it into Railway's database using the **public** connection details shown in the MySQL service's Variables tab (`MYSQL_PUBLIC_URL`, or its host/port/password parts).
+To copy existing local data to Railway, take a backup locally and restore it into Railway using the MySQL service's **`MYSQL_PUBLIC_URL`** (MySQL service → Variables), as shown below.
 
 ## Backup, restore and moving hosts
 
-Back up (from XAMPP or from Railway — use Railway's *public* host/port/password):
+The project includes its own backup/restore commands (they use the same driver as the app, so they work with XAMPP/MariaDB, Railway's MySQL 8 and any other MySQL host). A backup is a single `.sql` file containing **all tables and all PDF files**.
 
 ```powershell
-C:\xampp\mysql\bin\mysqldump.exe -h <host> -P <port> -u root -p<password> --default-character-set=utf8mb4 --hex-blob --single-transaction <database> > library_backup.sql
+cd server
+
+# Back up the local database (settings from server/.env)
+npm run backup
+
+# Back up the Railway database (paste MYSQL_PUBLIC_URL from Railway)
+npm run backup -- --url=mysql://root:PASSWORD@HOST:PORT/railway
+
+# Choose where the file is saved
+npm run backup -- --out=D:\backups\library.sql
+
+# Restore a backup (preview first, then add --yes). This REPLACES all data in the target.
+npm run restore -- library-backup-2026-09-27.sql --url=mysql://root:PASSWORD@HOST:PORT/railway
+npm run restore -- library-backup-2026-09-27.sql --url=mysql://root:PASSWORD@HOST:PORT/railway --yes
 ```
 
-Restore into any MySQL/MariaDB server (new host, Railway, or XAMPP):
-
-```bash
-mysql -h <host> -P <port> -u <user> -p<password> --default-character-set=utf8mb4 <database> < library_backup.sql
-```
-
-`--hex-blob` keeps the PDF bytes intact in the backup file. Run the restore from Git Bash or `cmd` (PowerShell's `<` redirection is not supported and its pipes can corrupt binary data). The backup includes the tables' definitions, so restoring replaces them completely.
+Without `--url`, both commands use the database configured in `server/.env`. The backup contains data only; restoring creates any missing tables from `schema.sql` first, so a backup can be restored into an empty database on any host.
 
 ## Default admin login
 

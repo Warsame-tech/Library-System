@@ -73,4 +73,4 @@ async function initDatabase() {
   console.log('✅ قاعدة البيانات جاهزة');
 }
 
-module.exports = { initDatabase };
+module.exports = { initDatabase, schemaStatements };
