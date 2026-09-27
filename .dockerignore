@@ -7,3 +7,4 @@ client/.env
 server/uploads/pdfs/*
 .git
 .gitignore
+**/library-backup-*.sql

@@ -4,3 +4,6 @@ node_modules/
 uploads/pdfs/*
 !uploads/pdfs/.gitkeep
 coverage/
+
+# Database backups (contain all data and password hashes)
+library-backup-*.sql
