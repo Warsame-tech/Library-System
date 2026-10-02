@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import useIdleLogout from "../hooks/useIdleLogout";
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  useIdleLogout();
 
   // منع تمرير الصفحة خلف القائمة الجانبية على الهاتف، وإغلاقها بزر Esc
   useEffect(() => {

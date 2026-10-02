@@ -122,6 +122,32 @@ describe('PDF storage in the database', () => {
     expect(Buffer.compare(res.body, pdf)).toBe(0);
   });
 
+  test('a book can be saved without a PDF and get one later via edit', async () => {
+    const created = await request(app)
+      .post('/api/books')
+      .set('Authorization', `Bearer ${token}`)
+      .field('title', 'كتاب بلا ملف');
+    expect(created.status).toBe(201);
+    expect(created.body.data.pdfs).toHaveLength(0);
+
+    const pdf = makePdf(4096);
+    const bookId = created.body.data.id;
+    const updated = await request(app)
+      .put(`/api/books/${bookId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .field('title', 'كتاب بلا ملف')
+      .attach('pdfs', pdf, { filename: 'later.pdf', contentType: 'application/pdf' });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.pdfs).toHaveLength(1);
+
+    const res = await request(app)
+      .get(`/api/books/${bookId}/pdfs/${updated.body.data.pdfs[0].id}/download`)
+      .set('Authorization', `Bearer ${token}`)
+      .buffer(true)
+      .parse(binaryParser);
+    expect(Buffer.compare(res.body, pdf)).toBe(0);
+  });
+
   test('deleting a book removes its stored PDF chunks', async () => {
     const { bookId, pdfId } = await uploadBook(makePdf(4096), 'كتاب للحذف');
     const del = await request(app).delete(`/api/books/${bookId}`).set('Authorization', `Bearer ${token}`);

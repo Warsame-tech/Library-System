@@ -104,7 +104,6 @@ The repository deploys to Railway as one service (API + built frontend, via the 
    JWT_SECRET=<long random string>
    DEFAULT_ADMIN_USERNAME=<admin username>
    DEFAULT_ADMIN_PASSWORD=<strong password>
-   VITE_IDLE_TIMEOUT_SECONDS=300
    ```
 4. App service → **Settings → Networking → Generate Domain**, then add `FRONTEND_URL=https://<your-domain>`.
 5. On first start the server creates all tables and the admin account automatically. `/api/health` is used as the deploy health check.

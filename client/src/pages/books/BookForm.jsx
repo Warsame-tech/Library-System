@@ -216,10 +216,17 @@ export default function BookForm() {
           </FormField>
         </div>
 
-        <FormField label="ملفات PDF">
-          <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 text-slate-500 dark:text-slate-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition">
-            <FiUploadCloud size={20} />
-            <span className="text-base font-bold">اضغط لاختيار ملف أو أكثر بصيغة PDF</span>
+        <FormField label={<>ملفات PDF <span className="text-sm font-semibold text-slate-400">(اختياري)</span></>}>
+          <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 px-3 text-center text-slate-500 dark:text-slate-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition">
+            <span className="flex items-center gap-2">
+              <FiUploadCloud size={20} />
+              <span className="text-base font-bold">اضغط لاختيار ملف أو أكثر بصيغة PDF</span>
+            </span>
+            <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+              {isEdit
+                ? "الملفات الجديدة تُضاف إلى الملفات الحالية"
+                : "يمكنك حفظ الكتاب بدون ملف، وإضافة ملف PDF لاحقاً من خلال تعديل الكتاب"}
+            </span>
             <input type="file" accept="application/pdf" multiple onChange={handlePdfChange} className="hidden" />
           </label>
 
