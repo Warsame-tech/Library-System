@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
         setUser(data);
         localStorage.setItem("user", JSON.stringify(data));
       })
-      .catch(() => {
+      .catch((err) => {
+        // تسجيل الخروج فقط إذا رفض الخادم الرمز فعلاً (401)، وليس عند انقطاع الشبكة أو إعادة تشغيل الخادم
+        if (err.response?.status !== 401) return;
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);

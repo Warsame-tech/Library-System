@@ -62,10 +62,12 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
       await pool.query('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
     }
 
+    // بدون مدة انتهاء افتراضياً: يبقى المستخدم مسجلاً حتى يضغط "تسجيل الخروج".
+    // يمكن فرض مدة (مثل 8h أو 30d) عبر متغير JWT_EXPIRES_IN
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      process.env.JWT_EXPIRES_IN ? { expiresIn: process.env.JWT_EXPIRES_IN } : {}
     );
 
     logAudit({ userId: user.id, username, action: 'login_success', ip });

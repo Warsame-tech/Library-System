@@ -38,6 +38,12 @@ describe('POST /api/auth/login', () => {
     expect(res.body.user.username).toBe(USERNAME);
   });
 
+  test('issues a login token that does not expire (stay logged in until logout)', async () => {
+    const res = await request(app).post('/api/auth/login').send({ username: USERNAME, password: PASSWORD });
+    const payload = require('jsonwebtoken').decode(res.body.token);
+    expect(payload.exp).toBeUndefined();
+  });
+
   test('locks the account after LOGIN_MAX_ATTEMPTS failed attempts', async () => {
     const maxAttempts = Number(process.env.LOGIN_MAX_ATTEMPTS);
     for (let i = 0; i < maxAttempts; i++) {

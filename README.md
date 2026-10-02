@@ -143,7 +143,7 @@ Server (backend) settings live in `server/.env` (copied from `.env.example`):
 
 - `DB_*` — MySQL connection (defaults match a standard XAMPP install)
 - `JWT_SECRET` — auto-generated random secret on first setup
-- `JWT_EXPIRES_IN` — session length (default 8h)
+- `JWT_EXPIRES_IN` — optional login lifetime (e.g. `8h`, `30d`). Not set by default: users stay logged in until they log out
 - `MAX_PDF_SIZE_MB` — PDF upload size limit (default 50MB)
 - `FRONTEND_URL` — allowed CORS origin
 - `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` — account lockout after repeated failed logins (default 5 attempts / 15 min)
@@ -160,10 +160,10 @@ This system was hardened against common threats while keeping it a **single-admi
 
 **Authentication & session**
 - Passwords hashed with bcrypt (never stored or logged in plain text).
-- JWT secret and all credentials read from `.env` (never hardcoded); tokens expire after `JWT_EXPIRES_IN` (default 8h).
+- JWT secret and all credentials read from `.env` (never hardcoded); logins do not expire unless `JWT_EXPIRES_IN` is set, and there is no inactivity logout (users stay logged in until they click log out).
 - Account lockout: after `LOGIN_MAX_ATTEMPTS` failed logins, the account is locked for `LOGIN_LOCK_MINUTES` (HTTP 423), independent of IP rate limiting so an attacker can't bypass it by rotating IPs.
 - Login/username errors are intentionally generic (no user enumeration).
-- No refresh-token flow was added — deliberate trade-off for a single-admin internal tool; a shorter/longer `JWT_EXPIRES_IN` can be tuned instead.
+- No refresh-token flow was added — deliberate trade-off for a single-admin internal tool; `JWT_EXPIRES_IN` can be set if logins should expire.
 
 **API hardening**
 - `helmet` sets standard security headers on every response.
