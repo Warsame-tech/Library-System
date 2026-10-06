@@ -112,24 +112,24 @@ router.get('/', authenticate, async (req, res) => {
 
     const [countRows] = await pool.query(`SELECT COUNT(DISTINCT b.id) AS total ${baseQuery}`, params);
 
+    // ?all=true يعيد كل الكتب المطابقة دون ترقيم (لتقرير الكتب حسب الفنون)
+    const all = req.query.all === 'true';
     const [rows] = await pool.query(
       `${BOOK_SELECT}
        ${where}
        ORDER BY b.${sortCol} ${sortDir}
-       LIMIT ? OFFSET ?`,
-      [...params, limitNum, offset]
+       ${all ? '' : 'LIMIT ? OFFSET ?'}`,
+      all ? params : [...params, limitNum, offset]
     );
 
     const data = await attachAuthorsAndPdfs(rows);
+    const total = countRows[0].total;
 
     res.json({
       data,
-      pagination: {
-        total: countRows[0].total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(countRows[0].total / limitNum) || 1,
-      },
+      pagination: all
+        ? { total, page: 1, limit: total, totalPages: 1 }
+        : { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) || 1 },
     });
   } catch (err) {
     console.error(err);

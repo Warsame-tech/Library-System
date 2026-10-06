@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FiUploadCloud, FiFile, FiTrash2, FiArrowRight } from "react-icons/fi";
 import api from "../../api/client";
 import { useToast } from "../../context/ToastContext";
-import { FormField, TextInput, Select } from "../../components/ui/FormField";
+import { FormField, TextInput } from "../../components/ui/FormField";
 import AuthorMultiSelect from "../../components/AuthorMultiSelect";
+import SearchableSelect from "../../components/ui/SearchableSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { PageSpinner } from "../../components/ui/Spinner";
 
@@ -178,21 +179,23 @@ export default function BookForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
           <FormField label="دار النشر">
-            <Select value={form.publisher_id} onChange={(e) => setForm({ ...form, publisher_id: e.target.value })}>
-              <option value="">بدون دار نشر</option>
-              {publishers.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </Select>
+            <SearchableSelect
+              options={publishers}
+              value={form.publisher_id}
+              onChange={(v) => setForm({ ...form, publisher_id: v })}
+              emptyLabel="بدون دار نشر"
+              searchPlaceholder="ابحث عن دار نشر..."
+            />
           </FormField>
 
           <FormField label="الفن">
-            <Select value={form.art_id} onChange={(e) => setForm({ ...form, art_id: e.target.value })}>
-              <option value="">بدون فن</option>
-              {arts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </Select>
+            <SearchableSelect
+              options={arts}
+              value={form.art_id}
+              onChange={(v) => setForm({ ...form, art_id: v })}
+              emptyLabel="بدون فن"
+              searchPlaceholder="ابحث عن فن..."
+            />
           </FormField>
         </div>
 

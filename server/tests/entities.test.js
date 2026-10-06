@@ -29,6 +29,21 @@ describe('GET /api/arts?all=true (book form dropdowns)', () => {
     expect(paged.body.data).toHaveLength(100);
   });
 
+  test('books list with all=true returns every book, beyond the 1000 page limit', async () => {
+    const titles = Array.from({ length: 1005 }, (_, i) => [`كتاب ${i + 1}`]);
+    await pool.query('INSERT INTO books (title) VALUES ?', [titles]);
+    try {
+      const res = await request(app)
+        .get('/api/books?all=true&sort_by=title&sort_dir=ASC')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1005);
+      expect(res.body.pagination.total).toBe(1005);
+    } finally {
+      await pool.query('DELETE FROM books');
+    }
+  });
+
   test('requires login', async () => {
     const res = await request(app).get('/api/arts?all=true');
     expect(res.status).toBe(401);

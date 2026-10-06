@@ -33,7 +33,7 @@ export default function BooksByArtReport() {
   function load() {
     setLoading(true);
     api
-      .get("/books", { params: { search, limit: 1000, sort_by: "title", sort_dir: "ASC" } })
+      .get("/books", { params: { search, all: true, sort_by: "title", sort_dir: "ASC" } })
       .then(({ data }) => setBooks(data.data))
       .catch((err) => toast.error(err.response?.data?.message || "تعذّر إنشاء التقرير"))
       .finally(() => setLoading(false));
