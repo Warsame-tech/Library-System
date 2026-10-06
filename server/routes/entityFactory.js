@@ -12,8 +12,14 @@ function createEntityRouter({ table, entityLabel, dependents }) {
   router.use(authenticate);
 
   // عرض الكل + بحث + ترقيم صفحات
+  // ?all=true يعيد كل السجلات دون ترقيم (للقوائم المنسدلة في نموذج الكتاب)
   router.get('/', async (req, res) => {
     try {
+      if (req.query.all === 'true') {
+        const [rows] = await pool.query(`SELECT id, name FROM ${table} ORDER BY name ASC`);
+        return res.json({ data: rows, pagination: { total: rows.length, page: 1, limit: rows.length, totalPages: 1 } });
+      }
+
       const { search = '', page = 1, limit = 20 } = req.query;
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));

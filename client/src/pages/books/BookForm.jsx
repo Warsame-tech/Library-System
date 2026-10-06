@@ -45,9 +45,9 @@ export default function BookForm() {
 
   useEffect(() => {
     Promise.all([
-      api.get("/authors", { params: { limit: 100 } }),
-      api.get("/publishers", { params: { limit: 100 } }),
-      api.get("/arts", { params: { limit: 100 } }),
+      api.get("/authors", { params: { all: true } }),
+      api.get("/publishers", { params: { all: true } }),
+      api.get("/arts", { params: { all: true } }),
     ]).then(([a, p, ar]) => {
       setAuthors(a.data.data);
       setPublishers(p.data.data);
