@@ -5,6 +5,7 @@ import api, { fileUrl } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { PageSpinner } from "../../components/ui/Spinner";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { BookTypeBadge } from "../../components/ui/BookType";
 
 function formatSize(bytes) {
   if (!bytes) return "—";
@@ -100,9 +101,15 @@ export default function BookDetails() {
             <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.art_name || "—"}</p>
           </div>
           <div>
-            <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">عدد المجلدات</p>
-            <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.volume_count || "—"}</p>
+            <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">نوع الكتب</p>
+            <BookTypeBadge type={book.book_type} />
           </div>
+          {book.book_type !== "risala" && (
+            <div>
+              <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">عدد المجلدات</p>
+              <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.volume_count || "—"}</p>
+            </div>
+          )}
           <div>
             <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">الرف رقم</p>
             <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.shelf_number || "—"}</p>

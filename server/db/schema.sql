@@ -65,11 +65,15 @@ CREATE TABLE IF NOT EXISTS books (
   title VARCHAR(255) NOT NULL,
   publisher_id INT DEFAULT NULL,
   art_id INT DEFAULT NULL,
+  -- نوع الكتب: risala = الرسالة، mujallad = المجلد (NULL للكتب القديمة التي لم يُحدَّد نوعها بعد)
+  book_type ENUM('risala','mujallad') DEFAULT NULL,
+  -- عدد المجلدات: مطلوب عندما يكون النوع "المجلد"، و NULL عندما يكون "الرسالة"
   volume_count INT DEFAULT NULL,
   shelf_number VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_books_title (title),
+  KEY idx_books_type (book_type),
   CONSTRAINT fk_books_publisher FOREIGN KEY (publisher_id) REFERENCES publishers(id) ON DELETE SET NULL,
   CONSTRAINT fk_books_art FOREIGN KEY (art_id) REFERENCES arts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

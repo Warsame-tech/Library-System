@@ -6,7 +6,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const { connect } = require('./connect');
-const { schemaStatements } = require('./init');
+const { schemaStatements, runMigrations } = require('./init');
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -35,8 +35,9 @@ async function main() {
     return;
   }
 
-  // إنشاء أي جداول ناقصة، ثم تفريغ الجداول وإدراج البيانات داخل معاملة واحدة
+  // إنشاء أي جداول/أعمدة ناقصة، ثم تفريغ الجداول وإدراج البيانات داخل معاملة واحدة
   for (const stmt of schemaStatements()) await promise.query(stmt);
+  await runMigrations(promise);
 
   await promise.query('SET FOREIGN_KEY_CHECKS = 0');
   await promise.beginTransaction();

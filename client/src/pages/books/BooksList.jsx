@@ -9,12 +9,15 @@ import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import PdfActions from "../../components/ui/PdfActions";
+import { BookTypeBadge, BookTypeFilter } from "../../components/ui/BookType";
+import { volumesLabel } from "../../constants/bookTypes";
 
 export default function BooksList() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [bookType, setBookType] = useState("");
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0 });
 
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -26,7 +29,7 @@ export default function BooksList() {
   async function load() {
     setLoading(true);
     try {
-      const { data } = await api.get("/books", { params: { search, page, limit: 10 } });
+      const { data } = await api.get("/books", { params: { search, book_type: bookType || undefined, page, limit: 10 } });
       setBooks(data.data);
       setPagination(data.pagination);
     } catch (err) {
@@ -40,10 +43,15 @@ export default function BooksList() {
     const t = setTimeout(load, search ? 350 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search]);
+  }, [page, search, bookType]);
 
   function handleSearch(value) {
     setSearch(value);
+    setPage(1);
+  }
+
+  function handleTypeFilter(value) {
+    setBookType(value);
     setPage(1);
   }
 
@@ -70,7 +78,8 @@ export default function BooksList() {
         addLabel="إضافة كتاب"
         search={search}
         onSearchChange={handleSearch}
-        searchPlaceholder="ابحث باسم الكتاب، المؤلف، دار النشر أو الفن..."
+        searchPlaceholder="ابحث باسم الكتاب، المؤلف، دار النشر، الفن أو النوع..."
+        extra={<BookTypeFilter value={bookType} onChange={handleTypeFilter} />}
       />
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -107,8 +116,12 @@ export default function BooksList() {
                     <dd className="inline text-slate-600 dark:text-slate-300 font-bold break-words">{b.art_name || "—"}</dd>
                   </div>
                   <div className="min-w-0">
+                    <dt className="inline text-slate-400 dark:text-slate-500 font-semibold">نوع الكتب: </dt>
+                    <dd className="inline"><BookTypeBadge type={b.book_type} /></dd>
+                  </div>
+                  <div className="min-w-0">
                     <dt className="inline text-slate-400 dark:text-slate-500 font-semibold">عدد المجلدات: </dt>
-                    <dd className="inline text-slate-600 dark:text-slate-300 font-bold">{b.volume_count || "—"}</dd>
+                    <dd className="inline text-slate-600 dark:text-slate-300 font-bold">{volumesLabel(b)}</dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="inline text-slate-400 dark:text-slate-500 font-semibold">الرف رقم: </dt>
@@ -142,6 +155,7 @@ export default function BooksList() {
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">المؤلف</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">دار النشر</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">الفن</th>
+                  <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">نوع الكتب</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">عدد المجلدات</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">الرف رقم</th>
                   <th className="text-right font-bold py-3 px-1.5 whitespace-nowrap">PDF</th>
@@ -161,7 +175,10 @@ export default function BooksList() {
                     </td>
                     <td className="py-2.5 px-1.5 text-slate-500 dark:text-slate-400 min-w-[6rem]">{b.publisher_name || "—"}</td>
                     <td className="py-2.5 px-1.5 text-slate-500 dark:text-slate-400 min-w-[5rem]">{b.art_name || "—"}</td>
-                    <td className="py-2.5 px-1.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{b.volume_count || "—"}</td>
+                    <td className="py-2.5 px-1.5">
+                      <BookTypeBadge type={b.book_type} />
+                    </td>
+                    <td className="py-2.5 px-1.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{volumesLabel(b)}</td>
                     <td className="py-2.5 px-1.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{b.shelf_number || "—"}</td>
                     <td className="py-2.5 px-1.5">
                       <PdfActions bookId={b.id} pdfs={b.pdfs} />

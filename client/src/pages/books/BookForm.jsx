@@ -3,11 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FiUploadCloud, FiFile, FiTrash2, FiArrowRight } from "react-icons/fi";
 import api from "../../api/client";
 import { useToast } from "../../context/ToastContext";
-import { FormField, TextInput } from "../../components/ui/FormField";
+import { FormField, TextInput, Select } from "../../components/ui/FormField";
 import AuthorMultiSelect from "../../components/AuthorMultiSelect";
 import SearchableSelect from "../../components/ui/SearchableSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { PageSpinner } from "../../components/ui/Spinner";
+import { BOOK_TYPES } from "../../constants/bookTypes";
 
 function formatSize(bytes) {
   if (!bytes) return "—";
@@ -25,6 +26,7 @@ export default function BookForm() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [authors, setAuthors] = useState([]);
   const [publishers, setPublishers] = useState([]);
@@ -34,6 +36,7 @@ export default function BookForm() {
     title: "",
     publisher_id: "",
     art_id: "",
+    book_type: "",
     volume_count: "",
     shelf_number: "",
     author_ids: [],
@@ -65,6 +68,7 @@ export default function BookForm() {
           title: data.title,
           publisher_id: data.publisher_id || "",
           art_id: data.art_id || "",
+          book_type: data.book_type || "",
           volume_count: data.volume_count || "",
           shelf_number: data.shelf_number || "",
           author_ids: data.authors.map((a) => a.id),
@@ -103,10 +107,35 @@ export default function BookForm() {
     }
   }
 
+  // تغيير نوع الكتب: عند اختيار "الرسالة" تُمسح قيمة عدد المجلدات لأنها لا تنطبق عليها
+  function handleBookTypeChange(value) {
+    setForm((f) => ({ ...f, book_type: value, volume_count: value === "mujallad" ? f.volume_count : "" }));
+    setFieldErrors({});
+    setError("");
+  }
+
+  const isMujallad = form.book_type === "mujallad";
+
+  function validate() {
+    const errors = {};
+    if (!form.book_type) errors.book_type = "نوع الكتب مطلوب";
+    if (isMujallad) {
+      const v = String(form.volume_count).trim();
+      if (!/^\d+$/.test(v) || Number(v) < 1) errors.volume_count = "عدد المجلدات مطلوب ويجب أن يكون رقماً أكبر من صفر";
+    }
+    return errors;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) {
       setError("اسم الكتب مطلوب");
+      return;
+    }
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setError("يرجى إكمال الحقول المطلوبة");
       return;
     }
     setError("");
@@ -116,7 +145,9 @@ export default function BookForm() {
     fd.append("title", form.title.trim());
     fd.append("publisher_id", form.publisher_id || "");
     fd.append("art_id", form.art_id || "");
-    fd.append("volume_count", form.volume_count || "");
+    fd.append("book_type", form.book_type);
+    // عدد المجلدات يُرسل فقط للمجلد؛ للرسالة تُرسل فارغة (والخادم يحفظها NULL)
+    fd.append("volume_count", isMujallad ? String(form.volume_count).trim() : "");
     fd.append("shelf_number", form.shelf_number || "");
     fd.append("author_ids", JSON.stringify(form.author_ids));
     newPdfs.forEach((f) => fd.append("pdfs", f));
@@ -200,15 +231,39 @@ export default function BookForm() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-          <FormField label="عدد المجلدات">
-            <TextInput
-              type="number"
-              value={form.volume_count}
-              onChange={(e) => setForm({ ...form, volume_count: e.target.value })}
-              placeholder="مثال: 3"
-              min="0"
-            />
+          <FormField label="نوع الكتب" required error={fieldErrors.book_type}>
+            <Select
+              value={form.book_type}
+              onChange={(e) => handleBookTypeChange(e.target.value)}
+              className={form.book_type ? "" : "text-slate-400 dark:text-slate-500"}
+            >
+              <option value="" disabled>
+                اختر نوع الكتب
+              </option>
+              {BOOK_TYPES.map((t) => (
+                <option key={t.value} value={t.value} className="text-slate-700 dark:text-slate-200">
+                  {t.label}
+                </option>
+              ))}
+            </Select>
           </FormField>
+
+          {/* عدد المجلدات: يظهر وتكون مطلوبة فقط عند اختيار "المجلد" */}
+          {isMujallad && (
+            <FormField label="عدد المجلدات" required error={fieldErrors.volume_count}>
+              <TextInput
+                type="number"
+                value={form.volume_count}
+                onChange={(e) => {
+                  setForm({ ...form, volume_count: e.target.value });
+                  if (fieldErrors.volume_count) setFieldErrors((fe) => ({ ...fe, volume_count: undefined }));
+                }}
+                placeholder="مثال: 3"
+                min="1"
+                step="1"
+              />
+            </FormField>
+          )}
 
           <FormField label="الرف رقم">
             <TextInput

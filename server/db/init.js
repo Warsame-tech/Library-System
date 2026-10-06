@@ -17,6 +17,29 @@ function schemaStatements() {
     .filter((stmt) => stmt && !/^(CREATE DATABASE|USE)\b/i.test(stmt));
 }
 
+// ترقيات البنية لقواعد البيانات الموجودة مسبقاً: CREATE TABLE IF NOT EXISTS لا يضيف أعمدة
+// جديدة إلى جدول موجود، لذلك يُضاف كل عمود جديد هنا مرة واحدة فقط (إن لم يكن موجوداً)
+const COLUMN_MIGRATIONS = [
+  {
+    table: 'books',
+    column: 'book_type',
+    sql: "ALTER TABLE books ADD COLUMN book_type ENUM('risala','mujallad') DEFAULT NULL AFTER art_id, ADD KEY idx_books_type (book_type)",
+  },
+];
+
+async function runMigrations(db = pool) {
+  for (const m of COLUMN_MIGRATIONS) {
+    const [rows] = await db.query(
+      'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+      [m.table, m.column]
+    );
+    if (rows.length === 0) {
+      await db.query(m.sql);
+      console.log(`✅ تمت إضافة العمود ${m.table}.${m.column}`);
+    }
+  }
+}
+
 async function ensureAdmin() {
   const [[{ count }]] = await pool.query('SELECT COUNT(*) AS count FROM users');
   if (count > 0) return;
@@ -68,9 +91,10 @@ async function initDatabase() {
   for (const stmt of schemaStatements()) {
     await pool.query(stmt);
   }
+  await runMigrations();
   if (isFreshDatabase) await importInitialData();
   await ensureAdmin();
   console.log('✅ قاعدة البيانات جاهزة');
 }
 
-module.exports = { initDatabase, schemaStatements };
+module.exports = { initDatabase, schemaStatements, runMigrations };

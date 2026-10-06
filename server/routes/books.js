@@ -5,14 +5,14 @@ const pool = require('../config/db');
 const authenticate = require('../middleware/auth');
 const { authenticateAllowQuery } = require('../middleware/auth');
 const { uploadBookFiles, PDF_DIR, isValidPdfSignature } = require('../middleware/upload');
-const { bookSchema } = require('../schemas/bookSchema');
+const { bookSchema, BOOK_TYPES } = require('../schemas/bookSchema');
 const { logAudit, clientIp } = require('../utils/audit');
 const { savePdfChunks, sendPdf } = require('../utils/pdfStorage');
 
 const router = express.Router();
 
 const BOOK_SELECT = `SELECT b.id, b.title, b.publisher_id, p.name AS publisher_name,
-              b.art_id, ar.name AS art_name, b.volume_count, b.shelf_number,
+              b.art_id, ar.name AS art_name, b.book_type, b.volume_count, b.shelf_number,
               b.created_at, b.updated_at
        FROM books b
        LEFT JOIN publishers p ON p.id = b.publisher_id
@@ -29,6 +29,23 @@ function parseAuthorIds(raw) {
     // قيمة مفردة
   }
   return [Number(raw)].filter(Boolean);
+}
+
+// أنواع الكتب التي يطابق اسمها نص البحث (بعد توحيد الهمزات والتاء المربوطة وإزالة "ال" والتشكيل)
+function normalizeTypeText(text) {
+  return String(text)
+    .replace(/[ً-ٰٟـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/^ال/, '')
+    .trim();
+}
+function typesMatchingSearch(search) {
+  const q = normalizeTypeText(search);
+  if (q.length < 3) return [];
+  return Object.entries(BOOK_TYPES)
+    .filter(([, label]) => normalizeTypeText(label).includes(q))
+    .map(([code]) => code);
 }
 
 // حذف ملفات الرفع المؤقتة (بعد نقلها إلى قاعدة البيانات، أو عند فشل التحقق)
@@ -82,13 +99,16 @@ router.get('/', authenticate, async (req, res) => {
     const params = [];
 
     if (search) {
+      // البحث بكلمة "رسالة" أو "مجلد" يُطابق نوع الكتب أيضاً
+      const types = typesMatchingSearch(search);
       conditions.push(
         `(b.title LIKE ? OR EXISTS (
             SELECT 1 FROM book_authors ba2 JOIN authors au2 ON au2.id = ba2.author_id
             WHERE ba2.book_id = b.id AND au2.name LIKE ?
-          ) OR p.name LIKE ? OR ar.name LIKE ? OR b.shelf_number LIKE ?)`
+          ) OR p.name LIKE ? OR ar.name LIKE ? OR b.shelf_number LIKE ?${types.length ? ' OR b.book_type IN (?)' : ''})`
       );
       params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      if (types.length) params.push(types);
     }
     if (author_id) {
       conditions.push('EXISTS (SELECT 1 FROM book_authors ba3 WHERE ba3.book_id = b.id AND ba3.author_id = ?)');
@@ -101,6 +121,11 @@ router.get('/', authenticate, async (req, res) => {
     if (art_id) {
       conditions.push('b.art_id = ?');
       params.push(art_id);
+    }
+    // تصفية حسب نوع الكتب (risala / mujallad)
+    if (req.query.book_type && BOOK_TYPES[req.query.book_type]) {
+      conditions.push('b.book_type = ?');
+      params.push(req.query.book_type);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -162,7 +187,7 @@ router.post('/', authenticate, (req, res) => {
       deleteFiles(pdfFiles);
       return res.status(400).json({ message: parsed.error.issues[0]?.message || 'بيانات الطلب غير صالحة' });
     }
-    const { title, publisher_id, art_id, volume_count, shelf_number } = parsed.data;
+    const { title, publisher_id, art_id, book_type, volume_count, shelf_number } = parsed.data;
     const authorIds = parseAuthorIds(req.body.author_ids);
 
     // التحقق من محتوى الملف الفعلي (magic bytes) وليس فقط من الترويسة المُرسَلة من المتصفح
@@ -177,9 +202,9 @@ router.post('/', authenticate, (req, res) => {
       await conn.beginTransaction();
 
       const [result] = await conn.query(
-        `INSERT INTO books (title, publisher_id, art_id, volume_count, shelf_number)
-         VALUES (?, ?, ?, ?, ?)`,
-        [title, publisher_id || null, art_id || null, volume_count || null, shelf_number || null]
+        `INSERT INTO books (title, publisher_id, art_id, book_type, volume_count, shelf_number)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [title, publisher_id || null, art_id || null, book_type, volume_count, shelf_number || null]
       );
       const bookId = result.insertId;
 
@@ -228,7 +253,7 @@ router.put('/:id', authenticate, (req, res) => {
       deleteFiles(pdfFiles);
       return res.status(400).json({ message: parsed.error.issues[0]?.message || 'بيانات الطلب غير صالحة' });
     }
-    const { title, publisher_id, art_id, volume_count, shelf_number } = parsed.data;
+    const { title, publisher_id, art_id, book_type, volume_count, shelf_number } = parsed.data;
     const authorIds = parseAuthorIds(req.body.author_ids);
 
     const invalidPdf = pdfFiles.find((f) => !isValidPdfSignature(f.path));
@@ -249,9 +274,9 @@ router.put('/:id', authenticate, (req, res) => {
       await conn.beginTransaction();
 
       await conn.query(
-        `UPDATE books SET title = ?, publisher_id = ?, art_id = ?, volume_count = ?, shelf_number = ?
+        `UPDATE books SET title = ?, publisher_id = ?, art_id = ?, book_type = ?, volume_count = ?, shelf_number = ?
          WHERE id = ?`,
-        [title, publisher_id || null, art_id || null, volume_count || null, shelf_number || null, bookId]
+        [title, publisher_id || null, art_id || null, book_type, volume_count, shelf_number || null, bookId]
       );
 
       // تحديث قائمة المؤلفين بالكامل

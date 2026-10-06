@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import PageHeader from "../../components/ui/PageHeader";
 import { PageSpinner } from "../../components/ui/Spinner";
 import EmptyState from "../../components/ui/EmptyState";
+import { BookTypeBadge } from "../../components/ui/BookType";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -86,12 +87,18 @@ export default function BooksByArtReport() {
                 {group.books.map((b) => (
                   <div key={b.id} className="flex flex-col lg:flex-row lg:items-center gap-3 px-4 sm:px-5 py-4">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 line-clamp-2 sm:line-clamp-1 break-words">
-                        {b.title}
-                      </h3>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 line-clamp-2 sm:line-clamp-1 break-words min-w-0">
+                          {b.title}
+                        </h3>
+                        <span className="shrink-0">
+                          <BookTypeBadge type={b.book_type} />
+                        </span>
+                      </div>
                       <p className="text-sm sm:text-base font-semibold text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 sm:line-clamp-1 break-words">
                         {b.authors.map((a) => a.name).join("، ") || "بدون مؤلف"}
                         {b.publisher_name && ` · ${b.publisher_name}`}
+                        {b.book_type === "mujallad" && b.volume_count && ` · ${b.volume_count} مجلدات`}
                         {b.shelf_number && ` · الرف ${b.shelf_number}`}
                       </p>
                     </div>

@@ -22,6 +22,7 @@ describe('PDF upload security', () => {
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
       .field('title', 'كتاب اختبار')
+      .field('book_type', 'risala')
       .attach('pdfs', Buffer.from('just plain text'), { filename: 'notes.txt', contentType: 'text/plain' });
     expect(res.status).toBe(400);
   });
@@ -31,6 +32,7 @@ describe('PDF upload security', () => {
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
       .field('title', 'كتاب اختبار')
+      .field('book_type', 'risala')
       .attach('pdfs', Buffer.from('this is not really a pdf'), { filename: 'fake.pdf', contentType: 'application/pdf' });
     expect(res.status).toBe(400);
 
@@ -45,6 +47,7 @@ describe('PDF upload security', () => {
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
       .field('title', 'كتاب صالح')
+      .field('book_type', 'risala')
       .attach('pdfs', validPdf, { filename: 'real.pdf', contentType: 'application/pdf' });
     expect(res.status).toBe(201);
     expect(res.body.data.pdfs).toHaveLength(1);
@@ -56,6 +59,7 @@ describe('PDF upload security', () => {
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
       .field('title', 'كتاب آخر')
+      .field('book_type', 'risala')
       .attach('pdfs', validPdf, { filename: '../../evil.pdf', contentType: 'application/pdf' });
     expect(res.status).toBe(201);
     const stored = res.body.data.pdfs[0].file_name;
@@ -78,6 +82,7 @@ describe('PDF storage in the database', () => {
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
       .field('title', title)
+      .field('book_type', 'risala')
       .attach('pdfs', pdf, { filename: 'كتاب.pdf', contentType: 'application/pdf' });
     expect(res.status).toBe(201);
     return { bookId: res.body.data.id, pdfId: res.body.data.pdfs[0].id };
@@ -126,7 +131,8 @@ describe('PDF storage in the database', () => {
     const created = await request(app)
       .post('/api/books')
       .set('Authorization', `Bearer ${token}`)
-      .field('title', 'كتاب بلا ملف');
+      .field('title', 'كتاب بلا ملف')
+      .field('book_type', 'risala');
     expect(created.status).toBe(201);
     expect(created.body.data.pdfs).toHaveLength(0);
 
@@ -136,6 +142,7 @@ describe('PDF storage in the database', () => {
       .put(`/api/books/${bookId}`)
       .set('Authorization', `Bearer ${token}`)
       .field('title', 'كتاب بلا ملف')
+      .field('book_type', 'risala')
       .attach('pdfs', pdf, { filename: 'later.pdf', contentType: 'application/pdf' });
     expect(updated.status).toBe(200);
     expect(updated.body.data.pdfs).toHaveLength(1);
