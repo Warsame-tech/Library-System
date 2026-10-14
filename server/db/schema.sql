@@ -69,6 +69,10 @@ CREATE TABLE IF NOT EXISTS books (
   book_type ENUM('risala','mujallad') DEFAULT NULL,
   -- عدد المجلدات: مطلوب عندما يكون النوع "المجلد"، و NULL عندما يكون "الرسالة"
   volume_count INT DEFAULT NULL,
+  -- له النسخات: عند التفعيل يحدد copy_count عدد خانات رفع ملفات PDF (خانة لكل نسخة)
+  has_copies TINYINT(1) NOT NULL DEFAULT 0,
+  -- عدد النسخات: اختياري، و NULL عندما لا يكون للكتاب نسخات
+  copy_count INT DEFAULT NULL,
   shelf_number VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -91,10 +95,13 @@ CREATE TABLE IF NOT EXISTS book_authors (
 CREATE TABLE IF NOT EXISTS book_pdfs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   book_id INT NOT NULL,
+  -- رقم النسخة (1..copy_count) لملف نسخة، و NULL لملفات PDF العادية؛ ملف واحد فقط لكل نسخة
+  copy_number INT DEFAULT NULL,
   file_name VARCHAR(255) NOT NULL,
   original_name VARCHAR(255) NOT NULL,
   file_size BIGINT NOT NULL,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_pdf_copy (book_id, copy_number),
   CONSTRAINT fk_pdf_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

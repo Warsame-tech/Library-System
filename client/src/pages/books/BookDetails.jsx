@@ -110,6 +110,20 @@ export default function BookDetails() {
               <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.volume_count || "—"}</p>
             </div>
           )}
+          {book.has_copies && (
+            <div>
+              <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">عدد النسخات</p>
+              <p className="text-slate-700 dark:text-slate-200 font-extrabold">
+                {book.copy_count || "—"}
+                {book.copy_count > 0 && (
+                  <span className="text-sm font-semibold text-slate-400">
+                    {" "}
+                    (تم رفع {book.pdfs.filter((p) => p.copy_number).length} ملف)
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">الرف رقم</p>
             <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.shelf_number || "—"}</p>
@@ -137,7 +151,10 @@ export default function BookDetails() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-base font-bold text-slate-700 dark:text-slate-200 truncate">{pdf.original_name}</p>
-                      <p className="text-sm font-semibold text-slate-400">{formatSize(pdf.file_size)}</p>
+                      <p className="text-sm font-semibold text-slate-400">
+                        {pdf.copy_number && `النسخة ${pdf.copy_number} · `}
+                        {formatSize(pdf.file_size)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

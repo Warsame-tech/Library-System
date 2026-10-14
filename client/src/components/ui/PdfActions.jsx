@@ -11,7 +11,11 @@ export default function PdfActions({ bookId, pdfs }) {
   return (
     <div className="flex flex-col gap-1.5">
       {pdfs.map((pdf, i) => (
-        <div key={pdf.id} className="flex items-center gap-1.5" title={pdf.original_name}>
+        <div
+          key={pdf.id}
+          className="flex items-center gap-1.5"
+          title={pdf.copy_number ? `النسخة ${pdf.copy_number} — ${pdf.original_name}` : pdf.original_name}
+        >
           {pdfs.length > 1 && (
             <span className="w-5 text-center text-xs font-bold text-slate-400 dark:text-slate-500">{i + 1}</span>
           )}

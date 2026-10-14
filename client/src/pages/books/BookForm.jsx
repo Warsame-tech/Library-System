@@ -5,10 +5,14 @@ import api from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { FormField, TextInput, Select } from "../../components/ui/FormField";
 import AuthorMultiSelect from "../../components/AuthorMultiSelect";
+import CopyPdfSlots from "../../components/CopyPdfSlots";
 import SearchableSelect from "../../components/ui/SearchableSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { PageSpinner } from "../../components/ui/Spinner";
 import { BOOK_TYPES } from "../../constants/bookTypes";
+
+// يطابق الحد الأقصى في الخادم (server/schemas/bookSchema.js)
+const MAX_COPIES = 100;
 
 function formatSize(bytes) {
   if (!bytes) return "—";
@@ -38,6 +42,8 @@ export default function BookForm() {
     art_id: "",
     book_type: "",
     volume_count: "",
+    has_copies: false,
+    copy_count: "",
     shelf_number: "",
     author_ids: [],
   });
@@ -46,6 +52,12 @@ export default function BookForm() {
   const [existingPdfs, setExistingPdfs] = useState([]);
   const [pdfToDelete, setPdfToDelete] = useState(null);
   const [deletingPdf, setDeletingPdf] = useState(false);
+
+  // ملفات النسخات المختارة ولم تُرفع بعد: { رقم النسخة: File }
+  const [copyFiles, setCopyFiles] = useState({});
+  // إعدادات النسخات كما هي محفوظة في الخادم (لمعرفة الخانات التي يمكن رفعها فوراً قبل الحفظ)
+  const [savedCopies, setSavedCopies] = useState({ has_copies: false, copy_count: null });
+  const [uploadingCopies, setUploadingCopies] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -70,9 +82,12 @@ export default function BookForm() {
           art_id: data.art_id || "",
           book_type: data.book_type || "",
           volume_count: data.volume_count || "",
+          has_copies: !!data.has_copies,
+          copy_count: data.copy_count || "",
           shelf_number: data.shelf_number || "",
           author_ids: data.authors.map((a) => a.id),
         });
+        setSavedCopies({ has_copies: !!data.has_copies, copy_count: data.copy_count });
         setExistingPdfs(data.pdfs);
       })
       .catch(() => {
@@ -116,12 +131,87 @@ export default function BookForm() {
 
   const isMujallad = form.book_type === "mujallad";
 
+  // عدد خانات رفع ملفات النسخات المعروضة (0 إذا لم يُدخل عدد صالح بعد)
+  const copyCountText = String(form.copy_count).trim();
+  const copyCountValid = /^\d+$/.test(copyCountText) && Number(copyCountText) >= 1 && Number(copyCountText) <= MAX_COPIES;
+  const slotCount = form.has_copies && copyCountValid ? Number(copyCountText) : 0;
+
+  const existingCopies = Object.fromEntries(existingPdfs.filter((p) => p.copy_number).map((p) => [p.copy_number, p]));
+  const generalPdfs = existingPdfs.filter((p) => !p.copy_number);
+  const maxExistingCopy = Math.max(0, ...Object.keys(existingCopies).map(Number));
+
+  // إلغاء "له النسخات" يخفي عدد النسخات ويمسح قيمته — إلا إذا كانت هناك ملفات نسخات محفوظة (حتى لا تُفقد)
+  function handleHasCopiesChange(checked) {
+    if (!checked && maxExistingCopy > 0) {
+      setFieldErrors((fe) => ({
+        ...fe,
+        has_copies: "لا يمكن إلغاء هذا الخيار لأن للكتاب ملفات نسخات محفوظة؛ احذف ملفات النسخات أولاً",
+      }));
+      return;
+    }
+    setForm((f) => ({ ...f, has_copies: checked, copy_count: checked ? f.copy_count : "" }));
+    if (!checked) setCopyFiles({});
+    setFieldErrors((fe) => ({ ...fe, has_copies: undefined, copy_count: undefined }));
+  }
+
+  function handleCopyPick(n, file) {
+    if (file.type !== "application/pdf") {
+      toast.error("يُسمح فقط برفع ملفات PDF");
+      return;
+    }
+    setCopyFiles((prev) => ({ ...prev, [n]: file }));
+  }
+
+  function clearCopyPick(n) {
+    setCopyFiles((prev) => {
+      const next = { ...prev };
+      delete next[n];
+      return next;
+    });
+  }
+
+  // الرفع الفوري (قبل الحفظ) متاح عند التعديل للنسخ ضمن العدد المحفوظ في الخادم
+  const canUploadNow = (n) => isEdit && savedCopies.has_copies && n <= (savedCopies.copy_count || 0);
+  const pendingCopyNumbers = Object.keys(copyFiles)
+    .map(Number)
+    .filter((n) => n <= slotCount)
+    .sort((a, b) => a - b);
+  const uploadableNow = pendingCopyNumbers.filter(canUploadNow);
+
+  async function uploadCopiesNow(numbers) {
+    setUploadingCopies(numbers.length === 1 ? numbers[0] : "all");
+    const fd = new FormData();
+    fd.append("copy_numbers", JSON.stringify(numbers));
+    numbers.forEach((n) => fd.append("copy_pdfs", copyFiles[n]));
+    try {
+      const { data } = await api.post(`/books/${id}/copy-pdfs`, fd);
+      setExistingPdfs(data.data.pdfs);
+      setCopyFiles((prev) => {
+        const next = { ...prev };
+        numbers.forEach((n) => delete next[n]);
+        return next;
+      });
+      toast.success(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "تعذّر رفع الملفات");
+    } finally {
+      setUploadingCopies(null);
+    }
+  }
+
   function validate() {
     const errors = {};
     if (!form.book_type) errors.book_type = "نوع الكتب مطلوب";
     if (isMujallad) {
       const v = String(form.volume_count).trim();
       if (!/^\d+$/.test(v) || Number(v) < 1) errors.volume_count = "عدد المجلدات مطلوب ويجب أن يكون رقماً أكبر من صفر";
+    }
+    if (form.has_copies) {
+      if (copyCountText !== "" && !copyCountValid) {
+        errors.copy_count = `عدد النسخات يجب أن يكون رقماً صحيحاً من 1 إلى ${MAX_COPIES}`;
+      } else if (maxExistingCopy > slotCount) {
+        errors.copy_count = `لا يمكن أن يكون عدد النسخات أقل من ${maxExistingCopy} لأن النسخة رقم ${maxExistingCopy} لها ملف PDF؛ احذف الملف أولاً`;
+      }
     }
     return errors;
   }
@@ -148,9 +238,16 @@ export default function BookForm() {
     fd.append("book_type", form.book_type);
     // عدد المجلدات يُرسل فقط للمجلد؛ للرسالة تُرسل فارغة (والخادم يحفظها NULL)
     fd.append("volume_count", isMujallad ? String(form.volume_count).trim() : "");
+    fd.append("has_copies", form.has_copies ? "true" : "false");
+    fd.append("copy_count", form.has_copies ? copyCountText : "");
     fd.append("shelf_number", form.shelf_number || "");
     fd.append("author_ids", JSON.stringify(form.author_ids));
     newPdfs.forEach((f) => fd.append("pdfs", f));
+    // تُرسل فقط الخانات التي اختير لها ملف؛ الخانات الفارغة لا تؤثر على الملفات المحفوظة
+    if (pendingCopyNumbers.length) {
+      fd.append("copy_numbers", JSON.stringify(pendingCopyNumbers));
+      pendingCopyNumbers.forEach((n) => fd.append("copy_pdfs", copyFiles[n]));
+    }
 
     try {
       if (isEdit) {
@@ -274,66 +371,148 @@ export default function BookForm() {
           </FormField>
         </div>
 
-        <FormField label={<>ملفات PDF <span className="text-sm font-semibold text-slate-400">(اختياري)</span></>}>
-          <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 px-3 text-center text-slate-500 dark:text-slate-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition">
-            <span className="flex items-center gap-2">
-              <FiUploadCloud size={20} />
-              <span className="text-base font-bold">اضغط لاختيار ملف أو أكثر بصيغة PDF</span>
-            </span>
-            <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-              {isEdit
-                ? "الملفات الجديدة تُضاف إلى الملفات الحالية"
-                : "يمكنك حفظ الكتاب بدون ملف، وإضافة ملف PDF لاحقاً من خلال تعديل الكتاب"}
-            </span>
-            <input type="file" accept="application/pdf" multiple onChange={handlePdfChange} className="hidden" />
+        <div className="mb-4">
+          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.has_copies}
+              onChange={(e) => handleHasCopiesChange(e.target.checked)}
+              className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="text-base font-bold text-slate-700 dark:text-slate-300">له النسخات</span>
           </label>
+          {fieldErrors.has_copies && <p className="text-red-500 text-sm font-semibold mt-1">{fieldErrors.has_copies}</p>}
+        </div>
 
-          {existingPdfs.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              {existingPdfs.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
-                    <div className="min-w-0">
-                      <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{p.original_name}</p>
-                      <p className="text-sm text-slate-400">{formatSize(p.file_size)}</p>
-                    </div>
-                  </div>
+        {/* عدد النسخات: يظهر فقط عند تفعيل "له النسخات"، ويحدد عدد خانات رفع ملفات PDF */}
+        {form.has_copies && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <FormField
+                label={<>عدد النسخات <span className="text-sm font-semibold text-slate-400">(اختياري)</span></>}
+                error={fieldErrors.copy_count}
+              >
+                <TextInput
+                  type="number"
+                  value={form.copy_count}
+                  onChange={(e) => {
+                    setForm({ ...form, copy_count: e.target.value });
+                    if (fieldErrors.copy_count) setFieldErrors((fe) => ({ ...fe, copy_count: undefined }));
+                  }}
+                  placeholder="مثال: 5"
+                  min="1"
+                  max={MAX_COPIES}
+                  step="1"
+                />
+              </FormField>
+            </div>
+
+            {slotCount > 0 && (
+              <FormField label={<>ملفات النسخات <span className="text-sm font-semibold text-slate-400">(اختياري)</span></>}>
+                <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mb-2">
+                  {isEdit
+                    ? "ارفع الملفات الناقصة أو استبدل الموجودة. الخانات الفارغة لا تؤثر على الملفات المحفوظة."
+                    : "يمكنك رفع بعض الملفات أو لا شيء، وإكمال الباقي لاحقاً من خلال تعديل الكتاب."}
+                </p>
+                <CopyPdfSlots
+                  bookId={id}
+                  count={slotCount}
+                  existing={existingCopies}
+                  pending={copyFiles}
+                  onPick={handleCopyPick}
+                  onClear={clearCopyPick}
+                  onDelete={setPdfToDelete}
+                  onUploadNow={uploadCopiesNow}
+                  canUploadNow={canUploadNow}
+                  uploading={uploadingCopies}
+                />
+                {uploadableNow.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => setPdfToDelete(p)}
-                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg shrink-0"
+                    onClick={() => uploadCopiesNow(uploadableNow)}
+                    disabled={uploadingCopies !== null}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-base font-bold transition disabled:opacity-60"
                   >
-                    <FiTrash2 size={15} />
+                    <FiUploadCloud size={18} />
+                    {uploadingCopies === "all" ? "جارٍ الرفع..." : `رفع كل الملفات المختارة (${uploadableNow.length})`}
                   </button>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </FormField>
+            )}
+          </>
+        )}
 
-          {newPdfs.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              {newPdfs.map((f, idx) => (
-                <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-900">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
-                    <div className="min-w-0">
-                      <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{f.name}</p>
-                      <p className="text-sm text-slate-400">{formatSize(f.size)} · جديد</p>
+        {(!form.has_copies || generalPdfs.length > 0 || newPdfs.length > 0) && (
+          <FormField
+            label={
+              <>
+                {form.has_copies ? "ملفات PDF أخرى" : "ملفات PDF"}{" "}
+                <span className="text-sm font-semibold text-slate-400">(اختياري)</span>
+              </>
+            }
+          >
+            {!form.has_copies && (
+              <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-6 px-3 text-center text-slate-500 dark:text-slate-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition">
+                <span className="flex items-center gap-2">
+                  <FiUploadCloud size={20} />
+                  <span className="text-base font-bold">اضغط لاختيار ملف أو أكثر بصيغة PDF</span>
+                </span>
+                <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+                  {isEdit
+                    ? "الملفات الجديدة تُضاف إلى الملفات الحالية"
+                    : "يمكنك حفظ الكتاب بدون ملف، وإضافة ملف PDF لاحقاً من خلال تعديل الكتاب"}
+                </span>
+                <input type="file" accept="application/pdf" multiple onChange={handlePdfChange} className="hidden" />
+              </label>
+            )}
+
+            {generalPdfs.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {generalPdfs.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
+                      <div className="min-w-0">
+                        <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{p.original_name}</p>
+                        <p className="text-sm text-slate-400">{formatSize(p.file_size)}</p>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setPdfToDelete(p)}
+                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg shrink-0"
+                    >
+                      <FiTrash2 size={15} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeNewPdf(idx)}
-                    className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg shrink-0"
-                  >
-                    <FiTrash2 size={15} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </FormField>
+                ))}
+              </div>
+            )}
+
+            {newPdfs.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {newPdfs.map((f, idx) => (
+                  <div key={idx} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-900">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FiFile className="text-primary-600 dark:text-primary-400 shrink-0" size={17} />
+                      <div className="min-w-0">
+                        <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{f.name}</p>
+                        <p className="text-sm text-slate-400">{formatSize(f.size)} · جديد</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeNewPdf(idx)}
+                      className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg shrink-0"
+                    >
+                      <FiTrash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </FormField>
+        )}
 
         <div className="flex gap-3 mt-6">
           <button
@@ -345,7 +524,7 @@ export default function BookForm() {
           </button>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploadingCopies !== null}
             className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-base transition disabled:opacity-60"
           >
             {saving ? "جارٍ الحفظ..." : "حفظ الكتاب"}

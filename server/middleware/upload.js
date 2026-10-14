@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 const os = require('os');
+const { MAX_COPIES } = require('../schemas/bookSchema');
 
 // المجلد القديم لملفات PDF — يُستخدم فقط لقراءة الملفات التي لم تُنقل بعد إلى قاعدة البيانات
 const PDF_DIR = path.join(__dirname, '..', 'uploads', 'pdfs');
@@ -36,12 +37,16 @@ const pdfFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// رفع ملفات PDF الخاصة باستمارة الكتاب
+// رفع ملفات PDF الخاصة باستمارة الكتاب:
+// pdfs = ملفات عامة، copy_pdfs = ملفات النسخات (رقم نسخة كل ملف يأتي في الحقل copy_numbers بالترتيب نفسه)
 const uploadBookFiles = multer({
   storage: pdfStorage,
   limits: { fileSize: MAX_PDF_SIZE },
   fileFilter: pdfFileFilter,
-}).fields([{ name: 'pdfs', maxCount: 20 }]);
+}).fields([
+  { name: 'pdfs', maxCount: 20 },
+  { name: 'copy_pdfs', maxCount: MAX_COPIES },
+]);
 
 // التحقق من التوقيع الفعلي للملف (magic bytes) بدلاً من الاعتماد فقط على
 // Content-Type القادم من المتصفح (قابل للتزييف بسهولة)

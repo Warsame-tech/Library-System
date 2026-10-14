@@ -208,5 +208,6 @@ Covers: login validation/lockout/success, protected-route rejection (missing/inv
 
 - Book IDs are never shown in the UI — books are referenced by title only.
 - Book fields: title, authors (many-to-many), publisher, art/category, volume count (عدد المجلدات), shelf number (الرف رقم), and PDF files.
+- **له النسخات / عدد النسخات:** when "له النسخات" is checked, the optional "عدد النسخات" field sets how many per-copy PDF upload slots the book has. Every slot is optional — a book can be saved with none, some or all copies uploaded, and missing copies uploaded later from the edit form (one at a time with "رفع الآن", several at once, or together with "حفظ الكتاب"; API: `POST /api/books/:id/copy-pdfs`). Uploading to a filled slot replaces that copy's file. The copy count cannot be lowered below — and the option cannot be unchecked while — a copy that still has a file, so saved copies are never removed by accident.
 - Editing a book does **not** delete its existing PDF files automatically; PDFs are removed individually via their own delete button.
 - All uploaded PDF files are validated by type and size on the backend, stored in the database, and served only to authenticated requests.

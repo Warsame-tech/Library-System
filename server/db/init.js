@@ -25,6 +25,21 @@ const COLUMN_MIGRATIONS = [
     column: 'book_type',
     sql: "ALTER TABLE books ADD COLUMN book_type ENUM('risala','mujallad') DEFAULT NULL AFTER art_id, ADD KEY idx_books_type (book_type)",
   },
+  {
+    table: 'books',
+    column: 'has_copies',
+    sql: 'ALTER TABLE books ADD COLUMN has_copies TINYINT(1) NOT NULL DEFAULT 0 AFTER volume_count',
+  },
+  {
+    table: 'books',
+    column: 'copy_count',
+    sql: 'ALTER TABLE books ADD COLUMN copy_count INT DEFAULT NULL AFTER has_copies',
+  },
+  {
+    table: 'book_pdfs',
+    column: 'copy_number',
+    sql: 'ALTER TABLE book_pdfs ADD COLUMN copy_number INT DEFAULT NULL AFTER book_id, ADD UNIQUE KEY uq_pdf_copy (book_id, copy_number)',
+  },
 ];
 
 async function runMigrations(db = pool) {
