@@ -5,10 +5,10 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import userAvatar from "../assets/user-avatar-navy.jpg";
-import IslamicLibraryBackground from "../components/login/IslamicLibraryBackground";
+import LoginArtwork from "../components/login/LoginArtwork";
 
 const inputClass =
-  "peer w-full h-12 pl-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition";
+  "peer w-full h-12 pl-11 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 dark:focus:border-gold-400 dark:focus:ring-gold-400/15 transition";
 
 const iconClass =
   "pointer-events-none absolute top-1/2 -translate-y-1/2 left-4 text-slate-400 peer-focus:text-primary-600 dark:peer-focus:text-gold-400 transition-colors";
@@ -47,48 +47,32 @@ export default function Login() {
   return (
     <div
       dir="ltr"
-      className="relative overflow-hidden min-h-dvh flex flex-col items-center justify-center bg-[#f4ecd8] dark:bg-primary-950 px-4 py-10"
+      className="relative min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-[#f7f3ea] via-[#f1ece0] to-[#e9e1cf] dark:from-slate-950 dark:via-[#0b1124] dark:to-slate-950 px-4 pt-20 pb-8 sm:py-10"
     >
-      {/* خلفية: مكتبة إسلامية — محراب مذهّب، زخرفة هندسية، رفوف مخطوطات وقناديل */}
-      <IslamicLibraryBackground />
-
       <button
         type="button"
         onClick={toggleTheme}
         aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         title={theme === "dark" ? "Light mode" : "Dark mode"}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-11 h-11 rounded-full flex items-center justify-center bg-white/80 text-primary-800 ring-1 ring-primary-900/10 shadow-lg shadow-primary-900/10 hover:bg-white hover:scale-105 dark:bg-white/10 dark:text-gold-300 dark:ring-white/15 dark:shadow-black/30 dark:hover:bg-white/20 backdrop-blur-md transition"
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-11 h-11 rounded-full flex items-center justify-center bg-white text-primary-800 ring-1 ring-primary-900/10 shadow-md hover:scale-105 dark:bg-slate-800 dark:text-gold-300 dark:ring-white/10 transition"
       >
         {theme === "dark" ? <FiSun size={19} /> : <FiMoon size={19} />}
       </button>
 
-      <div className="login-card relative w-full max-w-[25rem]">
-        {/* أول ما نزل من القرآن: الأمر بالقراءة — شعار مناسب للمكتبة */}
-        <p
-          dir="rtl"
-          lang="ar"
-          className="font-amiri text-center text-xl sm:text-[1.3rem] [@media(min-height:860px)]:sm:text-[1.7rem] leading-relaxed font-bold text-gold-700 dark:text-gold-300 drop-shadow-sm mb-[4.5rem]"
-        >
-          ﴿ اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ ﴾
-        </p>
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="relative bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-primary-900/15 dark:shadow-black/40 ring-1 ring-primary-900/5 dark:ring-white/15 px-6 sm:px-9 pt-16 pb-8"
-        >
-          {/* الصورة الشخصية فوق البطاقة */}
-          <div className="absolute -top-14 left-1/2 -translate-x-1/2">
-            <div className="p-1 rounded-full bg-gradient-to-br from-gold-300 via-gold-500 to-gold-700 shadow-xl shadow-black/30">
+      {/* بطاقة واحدة بقسمين: اللوحة الفنية (مكتبة إسلامية) + نموذج الدخول على خلفية نظيفة */}
+      <div className="login-card w-full max-w-[25rem] lg:max-w-[60rem] grid lg:grid-cols-[1.05fr_1fr] rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl shadow-primary-950/20 dark:shadow-black/50 ring-1 ring-primary-900/10 dark:ring-white/10">
+        <LoginArtwork />
+
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col justify-center px-6 sm:px-10 py-8 lg:py-12">
+          <div className="text-center mb-7">
+            <div className="inline-block p-[3px] rounded-full bg-gradient-to-br from-gold-300 via-gold-500 to-gold-700 shadow-lg shadow-primary-900/20">
               <img
                 src={userAvatar}
                 alt="Admin"
-                className="w-28 h-28 rounded-full object-cover ring-4 ring-white dark:ring-slate-900"
+                className="w-24 h-24 rounded-full object-cover ring-4 ring-white dark:ring-slate-900"
               />
             </div>
-          </div>
-
-          <div className="text-center mb-7">
-            <h1 className="text-[1.6rem] leading-tight font-extrabold tracking-tight text-slate-800 dark:text-white">
+            <h1 className="mt-4 text-[1.6rem] leading-tight font-extrabold tracking-tight text-slate-800 dark:text-white">
               Library Management System
             </h1>
             <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-gold-50 ring-1 ring-gold-200 dark:bg-gold-900/30 dark:ring-gold-800 text-gold-700 dark:text-gold-300 text-xs font-bold tracking-wide uppercase">
@@ -169,11 +153,11 @@ export default function Login() {
               </>
             )}
           </button>
-        </form>
 
-        <p className="mt-6 text-center text-xs font-semibold text-primary-900/70 dark:text-gold-200/70">
-          © {new Date().getFullYear()} Library Management System
-        </p>
+          <p className="mt-8 text-center text-xs font-medium text-slate-400 dark:text-slate-500">
+            © {new Date().getFullYear()} Library Management System
+          </p>
+        </form>
       </div>
     </div>
   );
