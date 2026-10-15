@@ -77,10 +77,60 @@ describe('له النسخات / عدد النسخات', () => {
     expect(res.body.data).toMatchObject({ has_copies: false, copy_count: null });
   });
 
-  test.each([['0'], ['abc'], ['-1'], ['101'], ['2.5']])('rejects an invalid copy count (%j)', async (count) => {
+  test.each([['0'], ['abc'], ['3a'], ['ثلاثة'], ['-1'], ['101'], ['2.5'], ['1e2']])('rejects an invalid copy count (%j)', async (count) => {
     const res = await createBook({ has_copies: 'true', copy_count: count });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/عدد النسخات/);
+  });
+
+  test('accepts Arabic-Indic digits for the copy count', async () => {
+    const res = await createBook({ has_copies: 'true', copy_count: '١٢' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.copy_count).toBe(12);
+  });
+});
+
+describe('وصف النسخ (copy_description)', () => {
+  async function storedDescription(id) {
+    const [[row]] = await pool.query('SELECT copy_description FROM books WHERE id = ?', [id]);
+    return row.copy_description;
+  }
+
+  test.each([['النسخة الأصلية'], ['Student Copy'], ['Volume A'], ['Nuqulka Macallinka'], ['نسخة 2 - Teacher\'s copy ✓']])(
+    'stores any language and mixed text (%j) and keeps it on edit',
+    async (text) => {
+      const res = await createBook({ has_copies: 'true', copy_count: '2', copy_description: text });
+      expect(res.status).toBe(201);
+      expect(res.body.data.copy_description).toBe(text);
+
+      const id = res.body.data.id;
+      const updated = await updateBook(id, { title: 'عنوان آخر', has_copies: 'true', copy_count: '2', copy_description: text });
+      expect(updated.status).toBe(200);
+      expect(await storedDescription(id)).toBe(text);
+    }
+  );
+
+  test('is optional, also without a copy count', async () => {
+    const empty = await createBook({ has_copies: 'true', copy_count: '2', copy_description: '' });
+    expect(empty.status).toBe(201);
+    expect(await storedDescription(empty.body.data.id)).toBeNull();
+
+    const noCount = await createBook({ has_copies: 'true', copy_description: 'نسخ الطلاب' });
+    expect(noCount.status).toBe(201);
+    expect(noCount.body.data).toMatchObject({ copy_count: null, copy_description: 'نسخ الطلاب' });
+  });
+
+  test('is cleared when له النسخات is unchecked', async () => {
+    const created = await createBook({ has_copies: 'true', copy_count: '2', copy_description: 'Student Copy' });
+    const res = await updateBook(created.body.data.id, { has_copies: 'false', copy_description: 'Student Copy' });
+    expect(res.status).toBe(200);
+    expect(await storedDescription(created.body.data.id)).toBeNull();
+  });
+
+  test('rejects a description longer than 500 characters', async () => {
+    const res = await createBook({ has_copies: 'true', copy_description: 'a'.repeat(501) });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/وصف النسخ/);
   });
 });
 
@@ -271,19 +321,19 @@ describe('database upgrade for existing installations', () => {
       .attach('pdfs', pdf('old'), { filename: 'old.pdf', contentType: 'application/pdf' });
     const id = created.body.data.id;
 
-    await pool.query('ALTER TABLE books DROP COLUMN copy_count, DROP COLUMN has_copies');
+    await pool.query('ALTER TABLE books DROP COLUMN copy_description, DROP COLUMN copy_count, DROP COLUMN has_copies');
     await pool.query('ALTER TABLE book_pdfs ADD KEY tmp_book (book_id)');
     await pool.query('ALTER TABLE book_pdfs DROP INDEX uq_pdf_copy, DROP COLUMN copy_number');
     await runMigrations(pool);
     await pool.query('ALTER TABLE book_pdfs DROP INDEX tmp_book');
 
-    const [bookCols] = await pool.query("SHOW COLUMNS FROM books WHERE Field IN ('has_copies', 'copy_count')");
-    expect(bookCols).toHaveLength(2);
+    const [bookCols] = await pool.query("SHOW COLUMNS FROM books WHERE Field IN ('has_copies', 'copy_count', 'copy_description')");
+    expect(bookCols).toHaveLength(3);
     const [pdfCols] = await pool.query("SHOW COLUMNS FROM book_pdfs LIKE 'copy_number'");
     expect(pdfCols).toHaveLength(1);
 
     const res = await auth(request(app).get(`/api/books/${id}`));
-    expect(res.body).toMatchObject({ title: 'كتاب قديم', has_copies: false, copy_count: null });
+    expect(res.body).toMatchObject({ title: 'كتاب قديم', has_copies: false, copy_count: null, copy_description: null });
     expect(copyNumbers(res.body)).toEqual([null]);
 
     await expect(runMigrations(pool)).resolves.toBeUndefined();

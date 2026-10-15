@@ -41,19 +41,43 @@ describe('نوع الكتب (book_type) validation', () => {
 });
 
 describe('عدد المجلدات (volume_count) depends on نوع الكتب', () => {
-  test.each([[''], ['0'], ['abc'], ['-2']])('المجلد requires a positive volume count (got %j)', async (volumes) => {
+  test.each([[''], ['   ']])('المجلد requires a volume count (got %j)', async (volumes) => {
     const res = await createBook({ title: 'كتاب', book_type: 'mujallad', volume_count: volumes });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/عدد المجلدات/);
+  });
+
+  test('rejects a volume count longer than 100 characters', async () => {
+    const res = await createBook({ title: 'كتاب', book_type: 'mujallad', volume_count: 'م'.repeat(101) });
+    expect(res.status).toBe(400);
   });
 
   test('المجلد stores the volume count', async () => {
     const res = await createBook({ title: 'كتاب مجلد', book_type: 'mujallad', volume_count: '3' });
     expect(res.status).toBe(201);
     expect(res.body.data.book_type).toBe('mujallad');
-    expect(res.body.data.volume_count).toBe(3);
-    expect(await storedRow(res.body.data.id)).toEqual({ book_type: 'mujallad', volume_count: 3 });
+    expect(res.body.data.volume_count).toBe('3');
+    expect(await storedRow(res.body.data.id)).toEqual({ book_type: 'mujallad', volume_count: '3' });
   });
+
+  test.each([['المجلد الأول'], ['Volume A'], ['3 مجلدات'], ['Mug 2aad'], ['٣']])(
+    'accepts text, numbers and mixed values in any language (%j) and keeps them on edit',
+    async (volumes) => {
+      const res = await createBook({ title: 'كتاب', book_type: 'mujallad', volume_count: volumes });
+      expect(res.status).toBe(201);
+      expect(res.body.data.volume_count).toBe(volumes);
+
+      const id = res.body.data.id;
+      const updated = await request(app)
+        .put(`/api/books/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .field('title', 'عنوان آخر')
+        .field('book_type', 'mujallad')
+        .field('volume_count', volumes);
+      expect(updated.status).toBe(200);
+      expect(await storedRow(id)).toEqual({ book_type: 'mujallad', volume_count: volumes });
+    }
+  );
 
   test('الرسالة ignores any volume count and stores NULL', async () => {
     const res = await createBook({ title: 'رسالة', book_type: 'risala', volume_count: '5' });
@@ -112,5 +136,15 @@ describe('database upgrade for existing installations', () => {
 
     // running it again is harmless
     await expect(runMigrations(pool)).resolves.toBeUndefined();
+  });
+
+  test('runMigrations turns an old numeric عدد المجلدات column into text, keeping the values', async () => {
+    const res = await createBook({ title: 'كتاب قديم', book_type: 'mujallad', volume_count: '4' });
+    await pool.query('ALTER TABLE books MODIFY COLUMN volume_count INT DEFAULT NULL');
+    await runMigrations(pool);
+
+    const [cols] = await pool.query("SHOW COLUMNS FROM books LIKE 'volume_count'");
+    expect(cols[0].Type).toBe('varchar(100)');
+    expect(await storedRow(res.body.data.id)).toEqual({ book_type: 'mujallad', volume_count: '4' });
   });
 });

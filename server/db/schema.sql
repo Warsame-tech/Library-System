@@ -67,12 +67,14 @@ CREATE TABLE IF NOT EXISTS books (
   art_id INT DEFAULT NULL,
   -- نوع الكتب: risala = الرسالة، mujallad = المجلد (NULL للكتب القديمة التي لم يُحدَّد نوعها بعد)
   book_type ENUM('risala','mujallad') DEFAULT NULL,
-  -- عدد المجلدات: مطلوب عندما يكون النوع "المجلد"، و NULL عندما يكون "الرسالة"
-  volume_count INT DEFAULT NULL,
+  -- عدد المجلدات: نص حر (أرقام أو كلمات بأي لغة)، مطلوب عندما يكون النوع "المجلد"، و NULL عندما يكون "الرسالة"
+  volume_count VARCHAR(100) DEFAULT NULL,
   -- له النسخات: عند التفعيل يحدد copy_count عدد خانات رفع ملفات PDF (خانة لكل نسخة)
   has_copies TINYINT(1) NOT NULL DEFAULT 0,
   -- عدد النسخات: اختياري، و NULL عندما لا يكون للكتاب نسخات
   copy_count INT DEFAULT NULL,
+  -- وصف النسخ: نص حر اختياري بأي لغة لتصنيف النسخ، و NULL عندما لا يكون للكتاب نسخات
+  copy_description VARCHAR(500) DEFAULT NULL,
   shelf_number VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

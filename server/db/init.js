@@ -40,6 +40,21 @@ const COLUMN_MIGRATIONS = [
     column: 'copy_number',
     sql: 'ALTER TABLE book_pdfs ADD COLUMN copy_number INT DEFAULT NULL AFTER book_id, ADD UNIQUE KEY uq_pdf_copy (book_id, copy_number)',
   },
+  {
+    table: 'books',
+    column: 'copy_description',
+    sql: 'ALTER TABLE books ADD COLUMN copy_description VARCHAR(500) DEFAULT NULL AFTER copy_count',
+  },
+];
+
+// تغيير نوع أعمدة موجودة (القيم الحالية تبقى كما هي، مثلاً الرقم 3 يصبح النص "3")
+const TYPE_MIGRATIONS = [
+  {
+    table: 'books',
+    column: 'volume_count',
+    dataType: 'varchar',
+    sql: 'ALTER TABLE books MODIFY COLUMN volume_count VARCHAR(100) DEFAULT NULL',
+  },
 ];
 
 async function runMigrations(db = pool) {
@@ -51,6 +66,16 @@ async function runMigrations(db = pool) {
     if (rows.length === 0) {
       await db.query(m.sql);
       console.log(`✅ تمت إضافة العمود ${m.table}.${m.column}`);
+    }
+  }
+  for (const m of TYPE_MIGRATIONS) {
+    const [rows] = await db.query(
+      'SELECT DATA_TYPE AS type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+      [m.table, m.column]
+    );
+    if (rows[0] && rows[0].type.toLowerCase() !== m.dataType) {
+      await db.query(m.sql);
+      console.log(`✅ تم تحديث نوع العمود ${m.table}.${m.column}`);
     }
   }
 }

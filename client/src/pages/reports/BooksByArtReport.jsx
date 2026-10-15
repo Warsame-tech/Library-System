@@ -98,7 +98,10 @@ export default function BooksByArtReport() {
                       <p className="text-sm sm:text-base font-semibold text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 sm:line-clamp-1 break-words">
                         {b.authors.map((a) => a.name).join("، ") || "بدون مؤلف"}
                         {b.publisher_name && ` · ${b.publisher_name}`}
-                        {b.book_type === "mujallad" && b.volume_count && ` · ${b.volume_count} مجلدات`}
+                        {/* عدد المجلدات نص حر: يُضاف "مجلدات" فقط عندما تكون القيمة رقماً */}
+                        {b.book_type === "mujallad" &&
+                          b.volume_count &&
+                          ` · ${b.volume_count}${/^\d+$/.test(b.volume_count) ? " مجلدات" : ""}`}
                         {b.shelf_number && ` · الرف ${b.shelf_number}`}
                       </p>
                     </div>

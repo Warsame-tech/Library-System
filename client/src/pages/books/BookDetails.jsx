@@ -124,6 +124,12 @@ export default function BookDetails() {
               </p>
             </div>
           )}
+          {book.has_copies && book.copy_description && (
+            <div>
+              <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">وصف النسخ</p>
+              <p className="text-slate-700 dark:text-slate-200 font-extrabold" dir="auto">{book.copy_description}</p>
+            </div>
+          )}
           <div>
             <p className="text-slate-400 dark:text-slate-500 mb-0.5 font-semibold">الرف رقم</p>
             <p className="text-slate-700 dark:text-slate-200 font-extrabold">{book.shelf_number || "—"}</p>

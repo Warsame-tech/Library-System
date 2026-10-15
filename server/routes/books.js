@@ -12,7 +12,7 @@ const { savePdfChunks, sendPdf } = require('../utils/pdfStorage');
 const router = express.Router();
 
 const BOOK_SELECT = `SELECT b.id, b.title, b.publisher_id, p.name AS publisher_name,
-              b.art_id, ar.name AS art_name, b.book_type, b.volume_count, b.has_copies, b.copy_count, b.shelf_number,
+              b.art_id, ar.name AS art_name, b.book_type, b.volume_count, b.has_copies, b.copy_count, b.copy_description, b.shelf_number,
               b.created_at, b.updated_at
        FROM books b
        LEFT JOIN publishers p ON p.id = b.publisher_id
@@ -254,7 +254,7 @@ router.post('/', authenticate, (req, res) => {
       deleteFiles(allFiles);
       return res.status(400).json({ message: parsed.error.issues[0]?.message || 'بيانات الطلب غير صالحة' });
     }
-    const { title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, shelf_number } = parsed.data;
+    const { title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, copy_description, shelf_number } = parsed.data;
     const authorIds = parseAuthorIds(req.body.author_ids);
 
     // ملفات النسخات اختيارية: يمكن رفع بعضها فقط أو لا شيء
@@ -276,9 +276,9 @@ router.post('/', authenticate, (req, res) => {
       await conn.beginTransaction();
 
       const [result] = await conn.query(
-        `INSERT INTO books (title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, shelf_number)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [title, publisher_id || null, art_id || null, book_type, volume_count, has_copies ? 1 : 0, copy_count, shelf_number || null]
+        `INSERT INTO books (title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, copy_description, shelf_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [title, publisher_id || null, art_id || null, book_type, volume_count, has_copies ? 1 : 0, copy_count, copy_description, shelf_number || null]
       );
       const bookId = result.insertId;
 
@@ -327,7 +327,7 @@ router.put('/:id', authenticate, (req, res) => {
       deleteFiles(allFiles);
       return res.status(400).json({ message: parsed.error.issues[0]?.message || 'بيانات الطلب غير صالحة' });
     }
-    const { title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, shelf_number } = parsed.data;
+    const { title, publisher_id, art_id, book_type, volume_count, has_copies, copy_count, copy_description, shelf_number } = parsed.data;
     const authorIds = parseAuthorIds(req.body.author_ids);
 
     const copies = checkCopyUploads(copyFiles, req.body.copy_numbers, has_copies, copy_count);
@@ -360,9 +360,9 @@ router.put('/:id', authenticate, (req, res) => {
 
       await conn.query(
         `UPDATE books SET title = ?, publisher_id = ?, art_id = ?, book_type = ?, volume_count = ?,
-                has_copies = ?, copy_count = ?, shelf_number = ?
+                has_copies = ?, copy_count = ?, copy_description = ?, shelf_number = ?
          WHERE id = ?`,
-        [title, publisher_id || null, art_id || null, book_type, volume_count, has_copies ? 1 : 0, copy_count, shelf_number || null, bookId]
+        [title, publisher_id || null, art_id || null, book_type, volume_count, has_copies ? 1 : 0, copy_count, copy_description, shelf_number || null, bookId]
       );
 
       // تحديث قائمة المؤلفين بالكامل

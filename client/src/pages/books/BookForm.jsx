@@ -14,6 +14,14 @@ import { BOOK_TYPES } from "../../constants/bookTypes";
 // يطابق الحد الأقصى في الخادم (server/schemas/bookSchema.js)
 const MAX_COPIES = 100;
 
+// عدد النسخات: أرقام صحيحة فقط — تُحوَّل الأرقام العربية (٠-٩) والفارسية (۰-۹) إلى 0-9 ويُحذف أي حرف آخر
+function digitsOnly(value) {
+  return value
+    .replace(/[٠-٩۰-۹]/g, (d) => String(d.charCodeAt(0) & 0xf))
+    .replace(/\D/g, "")
+    .replace(/^0+/, "");
+}
+
 function formatSize(bytes) {
   if (!bytes) return "—";
   const kb = bytes / 1024;
@@ -44,6 +52,7 @@ export default function BookForm() {
     volume_count: "",
     has_copies: false,
     copy_count: "",
+    copy_description: "",
     shelf_number: "",
     author_ids: [],
   });
@@ -84,6 +93,7 @@ export default function BookForm() {
           volume_count: data.volume_count || "",
           has_copies: !!data.has_copies,
           copy_count: data.copy_count || "",
+          copy_description: data.copy_description || "",
           shelf_number: data.shelf_number || "",
           author_ids: data.authors.map((a) => a.id),
         });
@@ -140,7 +150,7 @@ export default function BookForm() {
   const generalPdfs = existingPdfs.filter((p) => !p.copy_number);
   const maxExistingCopy = Math.max(0, ...Object.keys(existingCopies).map(Number));
 
-  // إلغاء "له النسخات" يخفي عدد النسخات ويمسح قيمته — إلا إذا كانت هناك ملفات نسخات محفوظة (حتى لا تُفقد)
+  // إلغاء "له النسخات" يخفي عدد النسخات ووصف النسخ ويمسح قيمتهما — إلا إذا كانت هناك ملفات نسخات محفوظة (حتى لا تُفقد)
   function handleHasCopiesChange(checked) {
     if (!checked && maxExistingCopy > 0) {
       setFieldErrors((fe) => ({
@@ -149,7 +159,12 @@ export default function BookForm() {
       }));
       return;
     }
-    setForm((f) => ({ ...f, has_copies: checked, copy_count: checked ? f.copy_count : "" }));
+    setForm((f) => ({
+      ...f,
+      has_copies: checked,
+      copy_count: checked ? f.copy_count : "",
+      copy_description: checked ? f.copy_description : "",
+    }));
     if (!checked) setCopyFiles({});
     setFieldErrors((fe) => ({ ...fe, has_copies: undefined, copy_count: undefined }));
   }
@@ -203,8 +218,7 @@ export default function BookForm() {
     const errors = {};
     if (!form.book_type) errors.book_type = "نوع الكتب مطلوب";
     if (isMujallad) {
-      const v = String(form.volume_count).trim();
-      if (!/^\d+$/.test(v) || Number(v) < 1) errors.volume_count = "عدد المجلدات مطلوب ويجب أن يكون رقماً أكبر من صفر";
+      if (!String(form.volume_count).trim()) errors.volume_count = "عدد المجلدات مطلوب";
     }
     if (form.has_copies) {
       if (copyCountText !== "" && !copyCountValid) {
@@ -240,6 +254,7 @@ export default function BookForm() {
     fd.append("volume_count", isMujallad ? String(form.volume_count).trim() : "");
     fd.append("has_copies", form.has_copies ? "true" : "false");
     fd.append("copy_count", form.has_copies ? copyCountText : "");
+    fd.append("copy_description", form.has_copies ? form.copy_description.trim() : "");
     fd.append("shelf_number", form.shelf_number || "");
     fd.append("author_ids", JSON.stringify(form.author_ids));
     newPdfs.forEach((f) => fd.append("pdfs", f));
@@ -348,16 +363,16 @@ export default function BookForm() {
           {/* عدد المجلدات: يظهر وتكون مطلوبة فقط عند اختيار "المجلد" */}
           {isMujallad && (
             <FormField label="عدد المجلدات" required error={fieldErrors.volume_count}>
+              {/* نص حر: أرقام أو كلمات بأي لغة */}
               <TextInput
-                type="number"
                 value={form.volume_count}
                 onChange={(e) => {
                   setForm({ ...form, volume_count: e.target.value });
                   if (fieldErrors.volume_count) setFieldErrors((fe) => ({ ...fe, volume_count: undefined }));
                 }}
-                placeholder="مثال: 3"
-                min="1"
-                step="1"
+                placeholder="مثال: 3 أو المجلد الأول"
+                maxLength={100}
+                dir="auto"
               />
             </FormField>
           )}
@@ -384,7 +399,7 @@ export default function BookForm() {
           {fieldErrors.has_copies && <p className="text-red-500 text-sm font-semibold mt-1">{fieldErrors.has_copies}</p>}
         </div>
 
-        {/* عدد النسخات: يظهر فقط عند تفعيل "له النسخات"، ويحدد عدد خانات رفع ملفات PDF */}
+        {/* عدد النسخات ووصف النسخ: يظهران فقط عند تفعيل "له النسخات"؛ عدد النسخات يحدد عدد خانات رفع ملفات PDF */}
         {form.has_copies && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
@@ -393,16 +408,28 @@ export default function BookForm() {
                 error={fieldErrors.copy_count}
               >
                 <TextInput
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={form.copy_count}
                   onChange={(e) => {
-                    setForm({ ...form, copy_count: e.target.value });
+                    setForm({ ...form, copy_count: digitsOnly(e.target.value) });
                     if (fieldErrors.copy_count) setFieldErrors((fe) => ({ ...fe, copy_count: undefined }));
                   }}
                   placeholder="مثال: 5"
-                  min="1"
-                  max={MAX_COPIES}
-                  step="1"
+                  maxLength={3}
+                />
+              </FormField>
+
+              <FormField
+                label={<>وصف النسخ <span className="text-sm font-semibold text-slate-400">(اختياري)</span></>}
+                error={fieldErrors.copy_description}
+              >
+                <TextInput
+                  value={form.copy_description}
+                  onChange={(e) => setForm({ ...form, copy_description: e.target.value })}
+                  placeholder="مثال: النسخة الأصلية، Student Copy"
+                  maxLength={500}
+                  dir="auto"
                 />
               </FormField>
             </div>
