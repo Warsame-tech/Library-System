@@ -6,6 +6,8 @@
    Segoe UI / Tahoma are offline fallbacks that also support Arabic */
 @theme {
   --font-sans: "Tajawal", "Segoe UI", Tahoma, system-ui, sans-serif;
+  /* خط نسخي للآية في صفحة الدخول (Google Fonts)، مع بدائل عربية دون اتصال */
+  --font-amiri: "Amiri", "Traditional Arabic", "Times New Roman", serif;
 
   /* هوية الألوان: كحلي ملكي (اللون الأساسي) + ذهبي (لون مميّز) */
   --color-primary-50: #eef3fb;
@@ -41,18 +43,14 @@ html {
   text-size-adjust: 100%;
 }
 
-/* خلفية صفحة الدخول: صورة رفوف الكتب تملأ الشاشة وتتحرك وتتكبّر ببطء ذهاباً وإياباً
-   (الصورة ليست قابلة للتكرار بلا فواصل، لذلك نحرّكها بدلاً من تكرارها) */
-@keyframes pattern-float {
-  from { transform: scale(1.08) translate(0, 0); }
-  to { transform: scale(1.2) translate(-3%, -2%); }
+/* قناديل صفحة الدخول تتأرجح بهدوء من نقطة تعليقها */
+@keyframes lantern-sway {
+  from { transform: rotate(-2.5deg); }
+  to { transform: rotate(2.5deg); }
 }
-.login-pattern {
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  animation: pattern-float 25s ease-in-out infinite alternate;
-  will-change: transform;
+.login-lantern {
+  transform-origin: top center;
+  animation: lantern-sway 5s ease-in-out infinite alternate;
 }
 /* هالات ضوئية تنبض ببطء، وظهور البطاقة بحركة ناعمة للأعلى */
 @keyframes login-glow {
@@ -70,7 +68,7 @@ html {
   animation: login-card-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-pattern, .login-glow, .login-card { animation: none; }
+  .login-lantern, .login-glow, .login-card { animation: none; }
 }
 
 /* clip (وليس hidden) كي لا يتعطّل position: sticky في الشريط العلوي والجانبي */

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import userAvatar from "../assets/user-avatar-navy.jpg";
-import booksPattern from "../assets/bookshelf-pattern.jpg";
+import IslamicLibraryBackground from "../components/login/IslamicLibraryBackground";
 
 const inputClass =
   "peer w-full h-12 pl-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 transition";
@@ -47,20 +47,10 @@ export default function Login() {
   return (
     <div
       dir="ltr"
-      className="relative overflow-hidden min-h-dvh flex flex-col items-center justify-center bg-[#eef2f9] dark:bg-slate-950 px-4 py-10"
+      className="relative overflow-hidden min-h-dvh flex flex-col items-center justify-center bg-[#f4ecd8] dark:bg-primary-950 px-4 py-10"
     >
-      {/* خلفية: رفوف الكتب المتحركة تحت طبقة لونية (فاتحة أو داكنة حسب الوضع) */}
-      <div
-        aria-hidden="true"
-        className="login-pattern pointer-events-none absolute inset-0 opacity-25 dark:opacity-30"
-        style={{ backgroundImage: `url(${booksPattern})` }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-50/90 via-white/80 to-gold-50/90 dark:from-primary-950/95 dark:via-primary-900/85 dark:to-slate-950/95"
-      />
-      <div aria-hidden="true" className="login-glow pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-primary-300/40 dark:bg-primary-400/30 blur-3xl" />
-      <div aria-hidden="true" className="login-glow pointer-events-none absolute -bottom-40 -right-24 w-[28rem] h-[28rem] rounded-full bg-gold-300/40 dark:bg-gold-400/20 blur-3xl [animation-delay:-6s]" />
+      {/* خلفية: مكتبة إسلامية — محراب مذهّب، زخرفة هندسية، رفوف مخطوطات وقناديل */}
+      <IslamicLibraryBackground />
 
       <button
         type="button"
@@ -72,7 +62,15 @@ export default function Login() {
         {theme === "dark" ? <FiSun size={19} /> : <FiMoon size={19} />}
       </button>
 
-      <div className="login-card relative w-full max-w-[25rem] mt-14">
+      <div className="login-card relative w-full max-w-[25rem]">
+        {/* أول ما نزل من القرآن: الأمر بالقراءة — شعار مناسب للمكتبة */}
+        <p
+          dir="rtl"
+          lang="ar"
+          className="font-amiri text-center text-xl sm:text-[1.3rem] [@media(min-height:860px)]:sm:text-[1.7rem] leading-relaxed font-bold text-gold-700 dark:text-gold-300 drop-shadow-sm mb-[4.5rem]"
+        >
+          ﴿ اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ ﴾
+        </p>
         <form
           onSubmit={handleSubmit}
           noValidate
@@ -173,7 +171,7 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-primary-800/60 dark:text-gold-200/70">
+        <p className="mt-6 text-center text-xs font-semibold text-primary-900/70 dark:text-gold-200/70">
           © {new Date().getFullYear()} Library Management System
         </p>
       </div>
